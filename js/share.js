@@ -18,9 +18,10 @@ const TERRAIN_EMOJI = {
   river: '\u{1F4A7}',
 };
 
-export function generateShareText(grid, score, puzzleNumber) {
+export function generateShareText(grid, score, puzzleNumber, boardVariant) {
   const stars = getStars(score);
   const starStr = '\u2B50'.repeat(stars);
+  const label = boardVariant > 1 ? ` (Extra #${boardVariant - 1})` : '';
 
   let gridText = '';
   for (let r = 0; r < ROWS; r += 2) {
@@ -36,7 +37,9 @@ export function generateShareText(grid, score, puzzleNumber) {
     gridText += row + '\n';
   }
 
-  return `Bird City #${puzzleNumber} \u{1F3D9}\uFE0F\nScore: ${score} ${starStr}\n${gridText}`;
+  // Use the day number for display, not the internal offset puzzle number
+  const dayNumber = puzzleNumber > 100000 ? puzzleNumber % 100000 : puzzleNumber;
+  return `Bird City #${dayNumber}${label} \u{1F3D9}\uFE0F\nScore: ${score} ${starStr}\n${gridText}`;
 }
 
 export async function copyToClipboard(text) {
