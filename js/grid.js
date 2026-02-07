@@ -71,10 +71,13 @@ function placeFeatures(grid, terrain, count, rng) {
  * - All cells must be in bounds
  * - No cell can overlap an existing building
  * - No cell can be on a river
- * - At least one cell must be adjacent to a river cell or an existing building
+ * - First tile: must be adjacent to the river
+ * - Subsequent tiles: must be adjacent to an existing building
  */
 export function canPlace(grid, shape, ar, ac) {
-  let touchesAnchor = false;
+  const hasBuildings = gridHasBuildings(grid);
+  let touchesRiver = false;
+  let touchesBuilding = false;
 
   for (const [dr, dc] of shape) {
     const r = ar + dr;
@@ -83,14 +86,22 @@ export function canPlace(grid, shape, ar, ac) {
     if (grid[r][c].building !== null) return false;
     if (grid[r][c].terrain === TERRAIN.RIVER) return false;
 
-    // Check neighbors for river or existing building
     for (const [nr, nc] of neighbors(r, c)) {
-      if (grid[nr][nc].terrain === TERRAIN.RIVER) touchesAnchor = true;
-      if (grid[nr][nc].building !== null) touchesAnchor = true;
+      if (grid[nr][nc].terrain === TERRAIN.RIVER) touchesRiver = true;
+      if (grid[nr][nc].building !== null) touchesBuilding = true;
     }
   }
 
-  return touchesAnchor;
+  return hasBuildings ? touchesBuilding : touchesRiver;
+}
+
+function gridHasBuildings(grid) {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c].building !== null) return true;
+    }
+  }
+  return false;
 }
 
 /**
