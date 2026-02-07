@@ -346,6 +346,25 @@ html, body {
   cursor: default;
 }
 
+/* Place button */
+.place-btn {
+  flex: 2;
+  background: var(--sage);
+  border-color: var(--sage);
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.place-btn:disabled {
+  background: var(--bg-surface);
+  border-color: var(--border-color);
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 /* Skip button */
 .skip-btn {
   flex-direction: column;

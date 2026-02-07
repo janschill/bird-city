@@ -47,7 +47,7 @@ const $seqRight = document.getElementById('seq-right');
 const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
 const $tilePreviewArea = document.getElementById('tile-preview-area');
-const $btnRotate = document.getElementById('btn-rotate');
+const $btnPlace = document.getElementById('btn-place');
 const $btnSkip = document.getElementById('btn-skip');
 const $btnStats = document.getElementById('btn-stats');
 const $btnMenu = document.getElementById('btn-menu');
@@ -123,11 +123,13 @@ function loadCurrentTile() {
 function clearPending() {
   pendingAnchor = null;
   pendingValid = false;
+  $btnPlace.disabled = true;
 }
 
 function setPending(r, c) {
   pendingAnchor = [r, c];
   pendingValid = canPlace(grid, currentShape, r, c);
+  $btnPlace.disabled = !pendingValid;
 }
 
 // ===== Rendering =====
@@ -281,7 +283,7 @@ function updateGridPreview() {
 
 // ===== Input =====
 function bindEvents() {
-  // Grid: click to place, hover for preview (desktop)
+  // Grid: tap to preview, hover for preview (desktop)
   $grid.addEventListener('click', onGridClick);
   $grid.addEventListener('pointermove', onGridHover);
   $grid.addEventListener('pointerleave', () => {
@@ -291,13 +293,13 @@ function bindEvents() {
     }
   });
 
-  // Preview area: tap to rotate, drag to place
+  // Preview area: tap to rotate, drag to preview on grid
   $tilePreviewArea.addEventListener('pointerdown', onPreviewPointerDown);
   $tilePreviewArea.addEventListener('pointermove', onPreviewPointerMove);
   $tilePreviewArea.addEventListener('pointerup', onPreviewPointerUp);
   $tilePreviewArea.addEventListener('pointercancel', onPreviewPointerCancel);
 
-  $btnRotate.addEventListener('click', onRotate);
+  $btnPlace.addEventListener('click', onPlace);
   $btnSkip.addEventListener('click', onSkip);
 
   $btnStats.addEventListener('click', showStats);
@@ -321,7 +323,7 @@ function bindEvents() {
   document.addEventListener('keydown', onKeyDown);
 }
 
-// --- Grid interaction: tap to place ---
+// --- Grid interaction: tap to preview position ---
 function onGridClick(e) {
   if (gameOver) return;
   const $cell = e.target.closest('.cell');
@@ -332,10 +334,6 @@ function onGridClick(e) {
 
   setPending(r, c);
   updateGridPreview();
-
-  if (pendingValid) {
-    doPlace(r, c);
-  }
 }
 
 function onGridHover(e) {
@@ -354,7 +352,7 @@ function onGridHover(e) {
   }
 }
 
-// --- Preview area: tap to rotate, drag to place ---
+// --- Preview area: tap to rotate, drag to preview on grid ---
 function onPreviewPointerDown(e) {
   if (gameOver) return;
   $tilePreviewArea.setPointerCapture(e.pointerId);
@@ -384,7 +382,7 @@ function onPreviewPointerMove(e) {
         updateGridPreview();
       }
     } else {
-      // Not over the grid
+      // Not over the grid — clear preview
       if (pendingAnchor) {
         clearPending();
         updateGridPreview();
@@ -397,16 +395,9 @@ function onPreviewPointerUp(e) {
   if (!dragState) return;
 
   if (dragState.dragging) {
-    // Drop: place if valid
-    const $cell = getCellAtPoint(e.clientX, e.clientY);
-    if ($cell && pendingValid) {
-      const r = +$cell.dataset.row;
-      const c = +$cell.dataset.col;
-      doPlace(r, c);
-    } else {
-      clearPending();
-      updateGridPreview();
-    }
+    // Drop: keep preview showing (PLACE button to confirm)
+    // pendingAnchor and pendingValid are already set from pointermove
+    // If we dropped outside the grid, pending is already cleared
   } else {
     // Tap (no drag) → rotate
     onRotate();
@@ -443,8 +434,15 @@ function onRotate() {
   if (gameOver) return;
   currentShape = rotateShape(currentShape);
   renderTilePreview();
-  if (pendingAnchor) setPending(pendingAnchor[0], pendingAnchor[1]);
+  if (pendingAnchor) {
+    setPending(pendingAnchor[0], pendingAnchor[1]);
+  }
   updateGridPreview();
+}
+
+function onPlace() {
+  if (gameOver || !pendingAnchor || !pendingValid) return;
+  doPlace(pendingAnchor[0], pendingAnchor[1]);
 }
 
 function onSkip() {
@@ -458,6 +456,7 @@ function onKeyDown(e) {
   if (gameOver) return;
   if (e.key === 'r' || e.key === 'R') onRotate();
   if (e.key === 's' || e.key === 'S') onSkip();
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlace(); }
 }
 
 // ===== Game Actions =====
@@ -657,9 +656,9 @@ function showHelp() {
 
     <div class="help-section">
       <h3>Controls</h3>
-      <p><strong>Tap the grid</strong> to place the current tile.<br>
-      <strong>Drag from the preview</strong> onto the grid to place.<br>
-      <strong>Tap the preview</strong> or use <strong>Rotate</strong> (R) to turn the tile.<br>
+      <p><strong>Tap the grid</strong> or <strong>drag from the preview</strong> to position a tile.<br>
+      <strong>Tap the preview</strong> or press <strong>R</strong> to rotate.<br>
+      Press <strong>Place</strong> to confirm.<br>
       <strong>Skip</strong> (S) to discard a tile (-2 pts).</p>
     </div>
 
