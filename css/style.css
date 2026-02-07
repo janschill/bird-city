@@ -23,11 +23,17 @@
   --terrain-tree: #b8d8b0;
   --terrain-river: #a0cce8;
 
-  /* Grid */
-  --cell-size: min(calc((100vw - 32px) / 7), calc((100vh - 260px) / 10));
+  /* Grid -- account for gaps (6×3=18 horiz, 9×3=27 vert) */
   --grid-gap: 3px;
   --border-color: #d3d6da;
   --radius: 6px;
+  --cell-size: min(calc((100vw - 50px) / 7), calc((100vh - 330px) / 10));
+}
+
+@supports (height: 1dvh) {
+  :root {
+    --cell-size: min(calc((100vw - 50px) / 7), calc((100dvh - 300px) / 10));
+  }
 }
 
 html, body {
@@ -160,6 +166,7 @@ html, body {
   align-items: center;
   justify-content: center;
   min-height: 0;
+  overflow: hidden;
 }
 
 #grid {
