@@ -1,14 +1,36 @@
 /**
- * Bird City -- Service Worker (network-first with cache fallback).
+ * Bird City -- Service Worker (network-first with pre-cache).
  *
- * Always fetches from network so deploys show up immediately.
+ * Pre-caches all game assets on install so the game works offline
+ * immediately. Uses network-first fetch so deploys show up on reload.
  * Falls back to cache when offline.
  */
 
-const CACHE_NAME = 'bird-city-v1';
+const CACHE_NAME = 'bird-city-v2';
 
-self.addEventListener('install', () => {
-  self.skipWaiting();
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/css/style.css',
+  '/js/app.js',
+  '/js/daily.js',
+  '/js/grid.js',
+  '/js/scoring.js',
+  '/js/share.js',
+  '/js/stats.js',
+  '/js/tiles.js',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (event) => {
