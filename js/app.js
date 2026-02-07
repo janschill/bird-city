@@ -10,16 +10,32 @@ import { getPuzzleNumber, generateTileSequence, createGridRNG } from './daily.js
 import { generateShareText, copyToClipboard } from './share.js';
 import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday } from './stats.js';
 
+// ===== Emoji maps =====
+const TERRAIN_EMOJI = {
+  empty: '',
+  rock: '\u{1FAA8}',
+  tree: '\u{1F332}',
+  river: '\u{1F30A}',
+};
+
+const BUILDING_EMOJI = {
+  house: '\u{1F3E0}',
+  park: '\u{1F333}',
+  shop: '\u{1F3EA}',
+  factory: '\u{1F3ED}',
+};
+
 // ===== State =====
 let puzzleNumber;
 let grid;
 let tileSequence;
 let currentTileIndex;
-let currentShape;  // transformed shape (after rotate/flip)
+let currentShape;
 let currentType;
 let skippedCount;
 let gameOver;
-let hoverAnchor;   // [row, col] the player is hovering/pointing at
+let pendingAnchor = null;  // [row, col] -- where the ghost preview is showing
+let pendingValid = false;  // whether the pending placement is valid
 
 // ===== DOM references =====
 const $grid = document.getElementById('grid');
@@ -28,6 +44,7 @@ const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
 const $btnRotate = document.getElementById('btn-rotate');
 const $btnFlip = document.getElementById('btn-flip');
+const $btnPlace = document.getElementById('btn-place');
 const $btnSkip = document.getElementById('btn-skip');
 const $btnStats = document.getElementById('btn-stats');
 const $btnHelp = document.getElementById('btn-help');
@@ -41,14 +58,12 @@ function init() {
 
   bindEvents();
 
-  // Check if already completed today
   if (hasCompletedToday(puzzleNumber)) {
     startNewGame();
     showAlreadyCompleted();
     return;
   }
 
-  // Try to resume in-progress game
   const saved = loadGameState();
   if (saved && saved.puzzleNumber === puzzleNumber) {
     restoreGame(saved);
@@ -64,7 +79,7 @@ function startNewGame() {
   currentTileIndex = 0;
   skippedCount = 0;
   gameOver = false;
-  hoverAnchor = null;
+  clearPending();
 
   loadCurrentTile();
   renderGrid();
@@ -78,7 +93,7 @@ function restoreGame(saved) {
   currentTileIndex = saved.currentTileIndex;
   skippedCount = saved.skippedCount;
   gameOver = false;
-  hoverAnchor = null;
+  clearPending();
 
   loadCurrentTile();
   renderGrid();
@@ -96,24 +111,55 @@ function loadCurrentTile() {
   currentType = tile.type;
 }
 
+// ===== Pending placement helpers =====
+function clearPending() {
+  pendingAnchor = null;
+  pendingValid = false;
+  $btnPlace.disabled = true;
+}
+
+function setPending(r, c) {
+  pendingAnchor = [r, c];
+  pendingValid = canPlace(grid, currentShape, r, c);
+  $btnPlace.disabled = !pendingValid;
+}
+
 // ===== Rendering =====
+function createCellElement(r, c) {
+  const cell = grid[r][c];
+  const $cell = document.createElement('div');
+  $cell.className = 'cell';
+  $cell.dataset.row = r;
+  $cell.dataset.col = c;
+
+  if (cell.building) {
+    $cell.classList.add(`cell--${cell.building}`);
+    const emoji = BUILDING_EMOJI[cell.building];
+    if (emoji) {
+      const $e = document.createElement('span');
+      $e.className = 'cell-emoji';
+      $e.textContent = emoji;
+      $cell.appendChild($e);
+    }
+  } else {
+    $cell.classList.add(`cell--${cell.terrain}`);
+    const emoji = TERRAIN_EMOJI[cell.terrain];
+    if (emoji) {
+      const $e = document.createElement('span');
+      $e.className = 'cell-emoji';
+      $e.textContent = emoji;
+      $cell.appendChild($e);
+    }
+  }
+
+  return $cell;
+}
+
 function renderGrid() {
   $grid.innerHTML = '';
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      const cell = grid[r][c];
-      const $cell = document.createElement('div');
-      $cell.className = 'cell';
-      $cell.dataset.row = r;
-      $cell.dataset.col = c;
-
-      if (cell.building) {
-        $cell.classList.add(`cell--${cell.building}`);
-      } else {
-        $cell.classList.add(`cell--${cell.terrain}`);
-      }
-
-      $grid.appendChild($cell);
+      $grid.appendChild(createCellElement(r, c));
     }
   }
 }
@@ -125,12 +171,10 @@ function renderTilePreview() {
   }
 
   const bounds = shapeBounds(currentShape);
-  $tilePreview.style.gridTemplateColumns = `repeat(${bounds.cols}, calc(var(--cell-size) * 0.7))`;
-  $tilePreview.style.gridTemplateRows = `repeat(${bounds.rows}, calc(var(--cell-size) * 0.7))`;
+  $tilePreview.style.gridTemplateColumns = `repeat(${bounds.cols}, calc(var(--cell-size) * 0.6))`;
+  $tilePreview.style.gridTemplateRows = `repeat(${bounds.rows}, calc(var(--cell-size) * 0.6))`;
 
   $tilePreview.innerHTML = '';
-
-  // Create a set for quick lookup
   const filled = new Set(currentShape.map(([r, c]) => `${r},${c}`));
 
   for (let r = 0; r < bounds.rows; r++) {
@@ -140,6 +184,13 @@ function renderTilePreview() {
       if (filled.has(`${r},${c}`)) {
         $cell.classList.add('preview-cell--filled');
         $cell.style.background = `var(--${currentType})`;
+        const emoji = BUILDING_EMOJI[currentType];
+        if (emoji) {
+          const $e = document.createElement('span');
+          $e.className = 'cell-emoji';
+          $e.textContent = emoji;
+          $cell.appendChild($e);
+        }
       } else {
         $cell.classList.add('preview-cell--empty');
       }
@@ -157,20 +208,31 @@ function updateHUD() {
 }
 
 function updateGridPreview() {
-  // Clear old preview classes
+  // Clear all preview classes and inline styles from non-building cells
   const cells = $grid.querySelectorAll('.cell');
-  cells.forEach(c => {
-    c.classList.remove('cell--preview', 'cell--invalid');
-    // Remove any inline style overrides for preview
-    if (!grid[+c.dataset.row][+c.dataset.col].building) {
-      c.style.removeProperty('background');
+  cells.forEach($c => {
+    $c.classList.remove('cell--preview', 'cell--invalid');
+    const r = +$c.dataset.row;
+    const c = +$c.dataset.col;
+    if (!grid[r][c].building) {
+      $c.style.removeProperty('background');
+      // Restore terrain emoji (preview might have replaced it)
+      const terrainEmoji = TERRAIN_EMOJI[grid[r][c].terrain];
+      const existing = $c.querySelector('.cell-emoji');
+      if (terrainEmoji && !existing) {
+        const $e = document.createElement('span');
+        $e.className = 'cell-emoji';
+        $e.textContent = terrainEmoji;
+        $c.appendChild($e);
+      } else if (existing) {
+        existing.textContent = terrainEmoji || '';
+      }
     }
   });
 
-  if (!hoverAnchor || gameOver) return;
+  if (!pendingAnchor || gameOver) return;
 
-  const [ar, ac] = hoverAnchor;
-  const valid = canPlace(grid, currentShape, ar, ac);
+  const [ar, ac] = pendingAnchor;
 
   for (const [dr, dc] of currentShape) {
     const r = ar + dr;
@@ -179,9 +241,17 @@ function updateGridPreview() {
     const $cell = $grid.querySelector(`[data-row="${r}"][data-col="${c}"]`);
     if (!$cell) continue;
 
-    if (valid) {
+    if (pendingValid) {
       $cell.classList.add('cell--preview');
       $cell.style.background = `var(--${currentType})`;
+      // Show building emoji in preview
+      let $e = $cell.querySelector('.cell-emoji');
+      if (!$e) {
+        $e = document.createElement('span');
+        $e.className = 'cell-emoji';
+        $cell.appendChild($e);
+      }
+      $e.textContent = BUILDING_EMOJI[currentType];
     } else {
       $cell.classList.add('cell--invalid');
     }
@@ -190,30 +260,31 @@ function updateGridPreview() {
 
 // ===== Input =====
 function bindEvents() {
-  // Grid click/touch to place
   $grid.addEventListener('click', onGridClick);
+
+  // Desktop: show live hover preview
   $grid.addEventListener('pointermove', onGridHover);
   $grid.addEventListener('pointerleave', () => {
-    hoverAnchor = null;
-    updateGridPreview();
+    // Only clear on desktop (hover); on touch, keep pending
+    if (!('ontouchstart' in window)) {
+      clearPending();
+      updateGridPreview();
+    }
   });
 
-  // Controls
   $btnRotate.addEventListener('click', onRotate);
   $btnFlip.addEventListener('click', onFlip);
+  $btnPlace.addEventListener('click', onPlace);
   $btnSkip.addEventListener('click', onSkip);
 
-  // Header buttons
   $btnStats.addEventListener('click', showStats);
   $btnHelp.addEventListener('click', showHelp);
 
-  // Modal close
   $modalOverlay.addEventListener('click', (e) => {
     if (e.target === $modalOverlay) closeModal();
   });
   $modal.querySelector('.modal-close').addEventListener('click', closeModal);
 
-  // Keyboard
   document.addEventListener('keydown', onKeyDown);
 }
 
@@ -225,25 +296,30 @@ function onGridClick(e) {
   const r = +$cell.dataset.row;
   const c = +$cell.dataset.col;
 
-  if (canPlace(grid, currentShape, r, c)) {
+  // If tapping the same anchor that's already pending and valid -> confirm
+  if (pendingAnchor && pendingAnchor[0] === r && pendingAnchor[1] === c && pendingValid) {
     doPlace(r, c);
+    return;
   }
+
+  // Otherwise, set/move the pending preview
+  setPending(r, c);
+  updateGridPreview();
 }
 
 function onGridHover(e) {
   if (gameOver) return;
+  // Ignore hover on touch devices
+  if (e.pointerType === 'touch') return;
+
   const $cell = document.elementFromPoint(e.clientX, e.clientY);
-  if (!$cell || !$cell.classList.contains('cell')) {
-    hoverAnchor = null;
-    updateGridPreview();
-    return;
-  }
+  if (!$cell || !$cell.classList.contains('cell')) return;
 
   const r = +$cell.dataset.row;
   const c = +$cell.dataset.col;
 
-  if (!hoverAnchor || hoverAnchor[0] !== r || hoverAnchor[1] !== c) {
-    hoverAnchor = [r, c];
+  if (!pendingAnchor || pendingAnchor[0] !== r || pendingAnchor[1] !== c) {
+    setPending(r, c);
     updateGridPreview();
   }
 }
@@ -252,6 +328,9 @@ function onRotate() {
   if (gameOver) return;
   currentShape = rotateShape(currentShape);
   renderTilePreview();
+  if (pendingAnchor) {
+    setPending(pendingAnchor[0], pendingAnchor[1]);
+  }
   updateGridPreview();
 }
 
@@ -259,12 +338,21 @@ function onFlip() {
   if (gameOver) return;
   currentShape = flipShape(currentShape);
   renderTilePreview();
+  if (pendingAnchor) {
+    setPending(pendingAnchor[0], pendingAnchor[1]);
+  }
   updateGridPreview();
+}
+
+function onPlace() {
+  if (gameOver || !pendingAnchor || !pendingValid) return;
+  doPlace(pendingAnchor[0], pendingAnchor[1]);
 }
 
 function onSkip() {
   if (gameOver) return;
   skippedCount++;
+  clearPending();
   advanceTile();
 }
 
@@ -273,22 +361,31 @@ function onKeyDown(e) {
   if (e.key === 'r' || e.key === 'R') onRotate();
   if (e.key === 'f' || e.key === 'F') onFlip();
   if (e.key === 's' || e.key === 'S') onSkip();
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlace(); }
 }
 
 // ===== Game Actions =====
 function doPlace(r, c) {
   const placed = placeTile(grid, currentShape, r, c, currentType);
 
-  // Re-render placed cells with animation
+  // Update placed cells in DOM
   for (const [pr, pc] of placed) {
     const $cell = $grid.querySelector(`[data-row="${pr}"][data-col="${pc}"]`);
     if ($cell) {
       $cell.className = `cell cell--${currentType} cell--just-placed`;
       $cell.style.removeProperty('background');
+      // Update emoji
+      let $e = $cell.querySelector('.cell-emoji');
+      if (!$e) {
+        $e = document.createElement('span');
+        $e.className = 'cell-emoji';
+        $cell.appendChild($e);
+      }
+      $e.textContent = BUILDING_EMOJI[currentType];
     }
   }
 
-  hoverAnchor = null;
+  clearPending();
   saveProgress();
   advanceTile();
 }
@@ -309,7 +406,7 @@ function saveProgress() {
   saveGameState({
     puzzleNumber,
     grid,
-    currentTileIndex: currentTileIndex + 1, // save next index
+    currentTileIndex: currentTileIndex + 1,
     skippedCount,
   });
 }
@@ -319,13 +416,12 @@ function endGame() {
   clearGameState();
 
   const result = calculateScore(grid, skippedCount);
-  const stats = recordGame(puzzleNumber, result.total);
+  recordGame(puzzleNumber, result.total);
 
-  renderGrid(); // clean up preview artifacts
+  renderGrid();
   $tilePreview.innerHTML = '';
   updateHUD();
 
-  // Small delay so the last tile placement animates
   setTimeout(() => showGameOver(result), 400);
 }
 
@@ -349,18 +445,18 @@ function showGameOver(result) {
     <div class="game-over-stars">${'\u2B50'.repeat(stars)}${'\u2606'.repeat(5 - stars)}</div>
 
     <div class="score-breakdown">
-      <div class="score-row"><span class="label">Houses (${d.houseBase} cells)</span><span class="value positive">+${d.houseBase}</span></div>
-      ${d.houseParkBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;Park adjacency</span><span class="value positive">+${d.houseParkBonus}</span></div>` : ''}
-      ${d.houseFactoryPenalty ? `<div class="score-row"><span class="label">&nbsp;&nbsp;Factory penalty</span><span class="value negative">-${d.houseFactoryPenalty * 2}</span></div>` : ''}
-      <div class="score-row"><span class="label">Parks (${Math.floor(d.parkBase / 2)} cells)</span><span class="value positive">+${d.parkBase}</span></div>
-      ${d.parkTreeBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;Tree adjacency</span><span class="value positive">+${d.parkTreeBonus}</span></div>` : ''}
+      <div class="score-row"><span class="label">\u{1F3E0} Houses (${d.houseBase} cells)</span><span class="value positive">+${d.houseBase}</span></div>
+      ${d.houseParkBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F333} Park adjacency</span><span class="value positive">+${d.houseParkBonus}</span></div>` : ''}
+      ${d.houseFactoryPenalty ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F3ED} Factory penalty</span><span class="value negative">-${d.houseFactoryPenalty * 2}</span></div>` : ''}
+      <div class="score-row"><span class="label">\u{1F333} Parks (${Math.floor(d.parkBase / 2)} cells)</span><span class="value positive">+${d.parkBase}</span></div>
+      ${d.parkTreeBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F332} Tree adjacency</span><span class="value positive">+${d.parkTreeBonus}</span></div>` : ''}
       ${d.parkNoHousePenalty ? `<div class="score-row"><span class="label">&nbsp;&nbsp;Parks w/o houses</span><span class="value negative">${d.parkNoHousePenalty} wasted</span></div>` : ''}
-      <div class="score-row"><span class="label">Shops (${d.shopBase} cells)</span><span class="value positive">+${d.shopBase}</span></div>
-      ${d.shopRiverBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;River adjacency</span><span class="value positive">+${d.shopRiverBonus}</span></div>` : ''}
+      <div class="score-row"><span class="label">\u{1F3EA} Shops (${d.shopBase} cells)</span><span class="value positive">+${d.shopBase}</span></div>
+      ${d.shopRiverBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F30A} River adjacency</span><span class="value positive">+${d.shopRiverBonus}</span></div>` : ''}
       ${d.shopClusterBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;Cluster bonus</span><span class="value positive">+${d.shopClusterBonus}</span></div>` : ''}
-      <div class="score-row"><span class="label">Factories (${Math.floor(d.factoryBase / 3)} cells)</span><span class="value positive">+${d.factoryBase}</span></div>
+      <div class="score-row"><span class="label">\u{1F3ED} Factories (${Math.floor(d.factoryBase / 3)} cells)</span><span class="value positive">+${d.factoryBase}</span></div>
       ${d.completeRows ? `<div class="score-row"><span class="label">Complete rows (${d.completeRows})</span><span class="value positive">+${d.completeRows * 2}</span></div>` : ''}
-      ${d.uncoveredRocks ? `<div class="score-row"><span class="label">Uncovered rocks (${d.uncoveredRocks})</span><span class="value negative">-${d.uncoveredRocks}</span></div>` : ''}
+      ${d.uncoveredRocks ? `<div class="score-row"><span class="label">\u{1FAA8} Uncovered rocks (${d.uncoveredRocks})</span><span class="value negative">-${d.uncoveredRocks}</span></div>` : ''}
       ${d.skippedTiles ? `<div class="score-row"><span class="label">Skipped tiles (${d.skippedTiles})</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
       <div class="score-row"><span class="label">Total</span><span class="value">${result.total}</span></div>
     </div>
@@ -424,31 +520,32 @@ function showHelp() {
 
     <div class="help-section">
       <h3>Controls</h3>
-      <p><strong>Click/tap</strong> a grid cell to place the current tile there.<br>
-      <strong>Rotate</strong> (R key) and <strong>Flip</strong> (F key) to transform tiles.<br>
-      <strong>Skip</strong> (S key) to discard a tile (-2 points).</p>
+      <p><strong>Tap</strong> a grid cell to preview tile placement.<br>
+      <strong>Tap again</strong> or press <strong>Place</strong> to confirm.<br>
+      <strong>Rotate</strong> (R) and <strong>Flip</strong> (F) to transform tiles.<br>
+      <strong>Skip</strong> (S) to discard a tile (-2 points).</p>
     </div>
 
     <div class="help-section">
       <h3>Buildings</h3>
       <div class="building-legend">
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--house)"></div><div><strong>House</strong><br>1pt/cell, +1 near parks</div></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--park)"></div><div><strong>Park</strong><br>2pt/cell near houses, +1 near trees</div></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--shop)"></div><div><strong>Shop</strong><br>1pt/cell, +1 near river, cluster bonus</div></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--factory)"></div><div><strong>Factory</strong><br>3pt/cell, -2 near houses</div></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--house)">\u{1F3E0}</div><div><strong>House</strong><br>1pt, +1 near parks</div></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--park)">\u{1F333}</div><div><strong>Park</strong><br>2pt near houses</div></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--shop)">\u{1F3EA}</div><div><strong>Shop</strong><br>1pt, river + cluster</div></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--factory)">\u{1F3ED}</div><div><strong>Factory</strong><br>3pt, -2 near houses</div></div>
       </div>
     </div>
 
     <div class="help-section">
       <h3>Terrain</h3>
-      <p><strong>River</strong> \u{1F4A7} bonus for nearby shops.<br>
-      <strong>Trees</strong> \u{1F332} bonus for nearby parks.<br>
-      <strong>Rocks</strong> \u{1FAA8} -1 penalty if uncovered.</p>
+      <p>\u{1F30A} <strong>River</strong> -- bonus for nearby shops<br>
+      \u{1F332} <strong>Trees</strong> -- bonus for nearby parks<br>
+      \u{1FAA8} <strong>Rocks</strong> -- penalty if uncovered</p>
     </div>
 
     <div class="help-section">
       <h3>Scoring</h3>
-      <p>Fill complete rows for +2 bonus each. Avoid leaving rocks uncovered. Connected shop clusters earn extra points!</p>
+      <p>Complete rows: +2 bonus. Connected shop clusters earn extra. Avoid uncovered rocks!</p>
     </div>
   `);
 }
