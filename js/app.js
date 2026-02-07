@@ -3,7 +3,7 @@
  */
 
 import { COLS, ROWS, createGrid, canPlace, placeTile } from './grid.js';
-import { COLORS, rotateShape, shapeBounds } from './tiles.js';
+import { COLORS, rotateShape, shapeBounds, getShape } from './tiles.js';
 import { calculateScore, getStars, runningScore } from './scoring.js';
 import { getPuzzleNumber, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
@@ -186,18 +186,36 @@ function renderTilePreview() {
 
 function renderSequence() {
   $tileSequence.innerHTML = '';
-  for (let i = 0; i < tileSequence.length; i++) {
-    const $dot = document.createElement('div');
-    $dot.className = 'seq-tile';
-    if (i < currentTileIndex) {
-      $dot.classList.add('seq-tile--done');
-    } else {
-      $dot.style.background = `var(--${tileSequence[i].type})`;
-      if (i === currentTileIndex) {
-        $dot.classList.add('seq-tile--current');
+
+  // Build list with original index, sort by shape then color (hides order)
+  const tiles = tileSequence.map((t, i) => ({ ...t, idx: i }));
+  tiles.sort((a, b) => a.shapeKey.localeCompare(b.shapeKey) || a.type.localeCompare(b.type));
+
+  for (const tile of tiles) {
+    const done = tile.idx < currentTileIndex;
+    const shape = getShape(tile.shapeKey); // base shape (unrotated)
+    const bounds = shapeBounds(shape);
+    const filled = new Set(shape.map(([r, c]) => `${r},${c}`));
+
+    const $shape = document.createElement('div');
+    $shape.className = 'seq-shape' + (done ? ' seq-shape--done' : '');
+    $shape.style.gridTemplateColumns = `repeat(${bounds.cols}, 4px)`;
+    $shape.style.gridTemplateRows = `repeat(${bounds.rows}, 4px)`;
+
+    for (let r = 0; r < bounds.rows; r++) {
+      for (let c = 0; c < bounds.cols; c++) {
+        const $cell = document.createElement('div');
+        if (filled.has(`${r},${c}`)) {
+          $cell.className = 'seq-cell';
+          $cell.style.background = done ? '' : `var(--${tile.type})`;
+        } else {
+          $cell.className = 'seq-cell seq-cell--empty';
+        }
+        $shape.appendChild($cell);
       }
     }
-    $tileSequence.appendChild($dot);
+
+    $tileSequence.appendChild($shape);
   }
 }
 

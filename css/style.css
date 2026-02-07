@@ -258,29 +258,36 @@ html, body {
 
 .preview-cell--empty { background: transparent; }
 
-/* Tile sequence overview */
+/* Tile sequence overview (mini shapes) */
 #tile-sequence {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 2px 0;
+  gap: 5px;
+  padding: 4px 8px;
 }
 
-.seq-tile {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-  transition: opacity 0.2s;
+.seq-shape {
+  display: grid;
+  gap: 1px;
 }
 
-.seq-tile--current {
-  outline: 2px solid var(--text);
-  outline-offset: 1px;
+.seq-cell {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
 }
 
-.seq-tile--done {
+.seq-cell--empty {
+  background: transparent;
+}
+
+.seq-shape--done {
+  opacity: 0.2;
+}
+
+.seq-shape--done .seq-cell {
   background: var(--border-color) !important;
 }
 

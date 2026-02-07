@@ -41,6 +41,7 @@ export function generateTileSequence(puzzleNumber) {
     const shapeKey = SHAPE_KEYS[Math.floor(rng() * SHAPE_KEYS.length)];
     const color = COLORS[Math.floor(rng() * COLORS.length)];
     tiles.push({
+      shapeKey,
       shape: getShape(shapeKey),
       type: color,
     });
