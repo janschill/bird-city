@@ -23,16 +23,16 @@
   --terrain-tree: #b8d8b0;
   --terrain-river: #a0cce8;
 
-  /* Grid -- account for gaps (6×3=18 horiz, 9×3=27 vert) */
+  /* Grid -- divide by 12: 10 grid rows + 2 rows for preview area */
   --grid-gap: 3px;
   --border-color: #d3d6da;
   --radius: 6px;
-  --cell-size: min(calc((100vw - 50px) / 7), calc((100vh - 330px) / 10));
+  --cell-size: min(calc((100vw - 50px) / 7), calc((100vh - 290px) / 12));
 }
 
 @supports (height: 1dvh) {
   :root {
-    --cell-size: min(calc((100vw - 50px) / 7), calc((100dvh - 300px) / 10));
+    --cell-size: min(calc((100vw - 50px) / 7), calc((100dvh - 260px) / 12));
   }
 }
 
@@ -274,8 +274,8 @@ html, body {
 }
 
 .seq-cell {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 1px;
 }
 

@@ -49,6 +49,7 @@ const $btnStats = document.getElementById('btn-stats');
 const $btnMenu = document.getElementById('btn-menu');
 const $headerMenu = document.getElementById('header-menu');
 const $btnHelpMenu = document.getElementById('btn-help-menu');
+const $btnEndMenu = document.getElementById('btn-end-menu');
 const $btnRestartMenu = document.getElementById('btn-restart-menu');
 const $modalOverlay = document.getElementById('modal-overlay');
 const $modal = document.getElementById('modal');
@@ -199,8 +200,8 @@ function renderSequence() {
 
     const $shape = document.createElement('div');
     $shape.className = 'seq-shape' + (done ? ' seq-shape--done' : '');
-    $shape.style.gridTemplateColumns = `repeat(${bounds.cols}, 4px)`;
-    $shape.style.gridTemplateRows = `repeat(${bounds.rows}, 4px)`;
+    $shape.style.gridTemplateColumns = `repeat(${bounds.cols}, 5px)`;
+    $shape.style.gridTemplateRows = `repeat(${bounds.rows}, 5px)`;
 
     for (let r = 0; r < bounds.rows; r++) {
       for (let c = 0; c < bounds.cols; c++) {
@@ -292,6 +293,7 @@ function bindEvents() {
   // Menu dropdown
   $btnMenu.addEventListener('click', toggleMenu);
   $btnHelpMenu.addEventListener('click', () => { closeMenu(); showHelp(); });
+  $btnEndMenu.addEventListener('click', () => { closeMenu(); showEndConfirm(); });
   $btnRestartMenu.addEventListener('click', () => { closeMenu(); showRestartConfirm(); });
   document.addEventListener('click', (e) => {
     if (!$headerMenu.classList.contains('hidden') && !$btnMenu.contains(e.target) && !$headerMenu.contains(e.target)) {
@@ -429,6 +431,26 @@ function toggleMenu() {
 
 function closeMenu() {
   $headerMenu.classList.add('hidden');
+}
+
+function showEndConfirm() {
+  if (gameOver) return;
+  const remaining = tileSequence.length - currentTileIndex;
+
+  openModal(`
+    <h2>End Game?</h2>
+    <p>${remaining} tile${remaining === 1 ? '' : 's'} remaining. Remaining tiles won't count against you.</p>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn-share" id="btn-cancel-end" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);flex:1;">Keep Playing</button>
+      <button class="btn-share" id="btn-confirm-end" style="flex:1;">End Game</button>
+    </div>
+  `);
+
+  document.getElementById('btn-cancel-end').addEventListener('click', closeModal);
+  document.getElementById('btn-confirm-end').addEventListener('click', () => {
+    closeModal();
+    endGame();
+  });
 }
 
 function showRestartConfirm() {
