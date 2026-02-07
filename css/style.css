@@ -266,19 +266,18 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  width: 22px;
+  width: 24px;
   flex-shrink: 0;
 }
 
 .seq-shape {
   display: grid;
-  gap: 1px;
+  gap: 0;
 }
 
 .seq-cell {
-  width: 4px;
-  height: 4px;
-  border-radius: 1px;
+  width: 5px;
+  height: 5px;
 }
 
 .seq-cell--empty {

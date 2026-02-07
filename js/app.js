@@ -205,8 +205,8 @@ function renderSequence() {
 
     const $shape = document.createElement('div');
     $shape.className = 'seq-shape' + (done ? ' seq-shape--done' : '');
-    $shape.style.gridTemplateColumns = `repeat(${bounds.cols}, 4px)`;
-    $shape.style.gridTemplateRows = `repeat(${bounds.rows}, 4px)`;
+    $shape.style.gridTemplateColumns = `repeat(${bounds.cols}, 5px)`;
+    $shape.style.gridTemplateRows = `repeat(${bounds.rows}, 5px)`;
 
     for (let r = 0; r < bounds.rows; r++) {
       for (let c = 0; c < bounds.cols; c++) {
