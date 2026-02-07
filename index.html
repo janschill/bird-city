@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#ffffff">
   <title>Bird City</title>
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
   <div id="app">
@@ -40,17 +40,18 @@
         <span id="tile-counter">Tile 1 / 22</span>
       </div>
 
-      <!-- City grid -->
+      <!-- City grid with tile inventory on sides -->
       <div id="grid-container">
+        <div id="seq-left" class="seq-panel"></div>
         <div id="grid"></div>
+        <div id="seq-right" class="seq-panel"></div>
       </div>
 
-      <!-- Controls: tile preview + buttons in a row -->
+      <!-- Controls: tile preview + buttons -->
       <div id="tile-panel">
         <div id="tile-preview-area">
           <div id="tile-preview"></div>
         </div>
-        <div id="tile-sequence"></div>
         <div id="tile-controls">
           <button id="btn-rotate" class="control-btn" aria-label="Rotate">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -72,6 +73,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=10"></script>
+  <script type="module" src="js/app.js?v=11"></script>
 </body>
 </html>

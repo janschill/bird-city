@@ -39,7 +39,8 @@ let pendingValid = false;
 // ===== DOM references =====
 const $grid = document.getElementById('grid');
 const $tilePreview = document.getElementById('tile-preview');
-const $tileSequence = document.getElementById('tile-sequence');
+const $seqLeft = document.getElementById('seq-left');
+const $seqRight = document.getElementById('seq-right');
 const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
 const $btnRotate = document.getElementById('btn-rotate');
@@ -186,22 +187,26 @@ function renderTilePreview() {
 }
 
 function renderSequence() {
-  $tileSequence.innerHTML = '';
+  $seqLeft.innerHTML = '';
+  $seqRight.innerHTML = '';
 
-  // Build list with original index, sort by shape then color (hides order)
+  // Sort by shape then color (hides sequence order)
   const tiles = tileSequence.map((t, i) => ({ ...t, idx: i }));
   tiles.sort((a, b) => a.shapeKey.localeCompare(b.shapeKey) || a.type.localeCompare(b.type));
 
-  for (const tile of tiles) {
+  const half = Math.ceil(tiles.length / 2);
+
+  for (let i = 0; i < tiles.length; i++) {
+    const tile = tiles[i];
     const done = tile.idx < currentTileIndex;
-    const shape = getShape(tile.shapeKey); // base shape (unrotated)
+    const shape = getShape(tile.shapeKey);
     const bounds = shapeBounds(shape);
     const filled = new Set(shape.map(([r, c]) => `${r},${c}`));
 
     const $shape = document.createElement('div');
     $shape.className = 'seq-shape' + (done ? ' seq-shape--done' : '');
-    $shape.style.gridTemplateColumns = `repeat(${bounds.cols}, 5px)`;
-    $shape.style.gridTemplateRows = `repeat(${bounds.rows}, 5px)`;
+    $shape.style.gridTemplateColumns = `repeat(${bounds.cols}, 4px)`;
+    $shape.style.gridTemplateRows = `repeat(${bounds.rows}, 4px)`;
 
     for (let r = 0; r < bounds.rows; r++) {
       for (let c = 0; c < bounds.cols; c++) {
@@ -216,7 +221,7 @@ function renderSequence() {
       }
     }
 
-    $tileSequence.appendChild($shape);
+    (i < half ? $seqLeft : $seqRight).appendChild($shape);
   }
 }
 

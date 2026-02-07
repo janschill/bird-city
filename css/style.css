@@ -23,16 +23,17 @@
   --terrain-tree: #b8d8b0;
   --terrain-river: #a0cce8;
 
-  /* Grid -- divide by 12: 10 grid rows + 2 rows for preview area */
+  /* Grid -- width accounts for side panels (~22px each + gaps) */
+  /* Height: 12 = 10 grid rows + 2 preview rows */
   --grid-gap: 3px;
   --border-color: #d3d6da;
   --radius: 6px;
-  --cell-size: min(calc((100vw - 50px) / 7), calc((100vh - 290px) / 12));
+  --cell-size: min(calc((100vw - 94px) / 7), calc((100vh - 250px) / 12));
 }
 
 @supports (height: 1dvh) {
   :root {
-    --cell-size: min(calc((100vw - 50px) / 7), calc((100dvh - 260px) / 12));
+    --cell-size: min(calc((100vw - 94px) / 7), calc((100dvh - 220px) / 12));
   }
 }
 
@@ -165,6 +166,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   min-height: 0;
   overflow: hidden;
 }
@@ -258,14 +260,14 @@ html, body {
 
 .preview-cell--empty { background: transparent; }
 
-/* Tile sequence overview (mini shapes) */
-#tile-sequence {
+/* Side panels: remaining tile inventory */
+.seq-panel {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 4px 8px;
+  gap: 4px;
+  width: 22px;
+  flex-shrink: 0;
 }
 
 .seq-shape {
@@ -274,8 +276,8 @@ html, body {
 }
 
 .seq-cell {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 1px;
 }
 
@@ -284,7 +286,7 @@ html, body {
 }
 
 .seq-shape--done {
-  opacity: 0.2;
+  opacity: 0.15;
 }
 
 .seq-shape--done .seq-cell {
