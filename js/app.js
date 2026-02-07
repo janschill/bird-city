@@ -5,7 +5,7 @@
 import { COLS, ROWS, createGrid, canPlace, placeTile } from './grid.js';
 import { COLORS, rotateShape, shapeBounds, getShape } from './tiles.js';
 import { calculateScore, getStars, runningScore } from './scoring.js';
-import { getPuzzleNumber, generateTileSequence, createGridRNG } from './daily.js';
+import { getPuzzleNumber, getDayNumber, getBoardVariant, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
 import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday } from './stats.js';
 
@@ -26,6 +26,7 @@ const COLOR_NAMES = {
 
 // ===== State =====
 let puzzleNumber;
+let boardVariant;
 let grid;
 let tileSequence;
 let currentTileIndex;
@@ -60,8 +61,14 @@ const $modal = document.getElementById('modal');
 const $modalContent = document.getElementById('modal-content');
 
 // ===== Init =====
+function displayPuzzleLabel() {
+  const day = getDayNumber();
+  return boardVariant > 1 ? `Bird City #${day} (Extra)` : `Bird City #${day}`;
+}
+
 function init() {
-  puzzleNumber = getPuzzleNumber();
+  boardVariant = getBoardVariant();
+  puzzleNumber = getPuzzleNumber(boardVariant);
   bindEvents();
 
   if (hasCompletedToday(puzzleNumber)) {
@@ -600,7 +607,7 @@ function showGameOver(result) {
   ).join('');
 
   const html = `
-    <div class="game-over-title">Bird City #${puzzleNumber}</div>
+    <div class="game-over-title">${displayPuzzleLabel()}</div>
     <div class="game-over-score">${result.total}</div>
     <div class="game-over-stars">${'\u2B50'.repeat(stars)}${'\u2606'.repeat(5 - stars)}</div>
 
@@ -618,7 +625,7 @@ function showGameOver(result) {
   openModal(html);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, result.total, puzzleNumber);
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });
@@ -628,16 +635,25 @@ function showAlreadyCompleted() {
   const stats = loadStats();
   const todayScore = stats.scores.find(s => s.puzzle === puzzleNumber);
 
+  // Find the next unplayed board variant
+  let nextVariant = boardVariant + 1;
+  const nextPuzzle = getPuzzleNumber(nextVariant);
+  const nextAlsoPlayed = stats.scores.some(s => s.puzzle === nextPuzzle);
+  const extraBoardBtn = nextAlsoPlayed
+    ? ''
+    : `<a href="?board=${nextVariant}" class="btn-share" style="display:block;text-align:center;margin-top:8px;text-decoration:none;">Play Extra Board</a>`;
+
   openModal(`
     <div class="game-over-title">Already Played!</div>
-    <p style="text-align:center; margin: 16px 0;">You've already completed today's puzzle.</p>
+    <p style="text-align:center; margin: 16px 0;">You've already completed ${boardVariant > 1 ? 'this extra board' : "today's puzzle"}.</p>
     ${todayScore ? `<div class="game-over-score">${todayScore.score}</div><div class="game-over-stars">${'\u2B50'.repeat(getStars(todayScore.score))}</div>` : ''}
     <p style="text-align:center; color: var(--text-muted);">Come back tomorrow for a new puzzle!</p>
     <button class="btn-share" id="btn-share-result" style="margin-top: 16px;">Share Result</button>
+    ${extraBoardBtn}
   `);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber);
+    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });

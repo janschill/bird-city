@@ -7,9 +7,31 @@ import { SHAPE_KEYS, COLORS, getShape } from './tiles.js';
 const TILES_PER_GAME = 14;
 
 /**
- * Puzzle number (days since epoch).
+ * Read the board variant from the URL (?board=2, etc). Default is 1.
  */
-export function getPuzzleNumber() {
+export function getBoardVariant() {
+  const params = new URLSearchParams(window.location.search);
+  const v = parseInt(params.get('board'), 10);
+  return v > 1 ? v : 1;
+}
+
+/**
+ * Puzzle number (days since epoch), offset by board variant.
+ */
+export function getPuzzleNumber(variant) {
+  if (variant === undefined) variant = getBoardVariant();
+  const epoch = new Date('2025-01-01').getTime();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const dayNumber = Math.floor((today - epoch) / (1000 * 60 * 60 * 24));
+  if (variant <= 1) return dayNumber;
+  return dayNumber + variant * 100000;
+}
+
+/**
+ * The base day number (no variant offset), for display purposes.
+ */
+export function getDayNumber() {
   const epoch = new Date('2025-01-01').getTime();
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
