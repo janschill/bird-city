@@ -1,10 +1,9 @@
 /**
  * Bird City -- Main application module.
- * Orchestrates game state, rendering, and input.
  */
 
 import { COLS, ROWS, createGrid, canPlace, placeTile } from './grid.js';
-import { rotateShape, flipShape, shapeBounds } from './tiles.js';
+import { COLORS, rotateShape, flipShape, shapeBounds } from './tiles.js';
 import { calculateScore, getStars, runningScore } from './scoring.js';
 import { getPuzzleNumber, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
@@ -18,11 +17,11 @@ const TERRAIN_EMOJI = {
   river: '\u{1F30A}',
 };
 
-const BUILDING_EMOJI = {
-  house: '\u{1F3E0}',
-  park: '\u{1F333}',
-  shop: '\u{1F3EA}',
-  factory: '\u{1F3ED}',
+// Color display names
+const COLOR_NAMES = {
+  rust: 'Rust',
+  sand: 'Sand',
+  sage: 'Sage',
 };
 
 // ===== State =====
@@ -34,8 +33,8 @@ let currentShape;
 let currentType;
 let skippedCount;
 let gameOver;
-let pendingAnchor = null;  // [row, col] -- where the ghost preview is showing
-let pendingValid = false;  // whether the pending placement is valid
+let pendingAnchor = null;
+let pendingValid = false;
 
 // ===== DOM references =====
 const $grid = document.getElementById('grid');
@@ -55,7 +54,6 @@ const $modalContent = document.getElementById('modal-content');
 // ===== Init =====
 function init() {
   puzzleNumber = getPuzzleNumber();
-
   bindEvents();
 
   if (hasCompletedToday(puzzleNumber)) {
@@ -111,7 +109,7 @@ function loadCurrentTile() {
   currentType = tile.type;
 }
 
-// ===== Pending placement helpers =====
+// ===== Pending placement =====
 function clearPending() {
   pendingAnchor = null;
   pendingValid = false;
@@ -125,41 +123,30 @@ function setPending(r, c) {
 }
 
 // ===== Rendering =====
-function createCellElement(r, c) {
-  const cell = grid[r][c];
-  const $cell = document.createElement('div');
-  $cell.className = 'cell';
-  $cell.dataset.row = r;
-  $cell.dataset.col = c;
-
-  if (cell.building) {
-    $cell.classList.add(`cell--${cell.building}`);
-    const emoji = BUILDING_EMOJI[cell.building];
-    if (emoji) {
-      const $e = document.createElement('span');
-      $e.className = 'cell-emoji';
-      $e.textContent = emoji;
-      $cell.appendChild($e);
-    }
-  } else {
-    $cell.classList.add(`cell--${cell.terrain}`);
-    const emoji = TERRAIN_EMOJI[cell.terrain];
-    if (emoji) {
-      const $e = document.createElement('span');
-      $e.className = 'cell-emoji';
-      $e.textContent = emoji;
-      $cell.appendChild($e);
-    }
-  }
-
-  return $cell;
-}
-
 function renderGrid() {
   $grid.innerHTML = '';
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      $grid.appendChild(createCellElement(r, c));
+      const cell = grid[r][c];
+      const $cell = document.createElement('div');
+      $cell.className = 'cell';
+      $cell.dataset.row = r;
+      $cell.dataset.col = c;
+
+      if (cell.building) {
+        $cell.classList.add(`cell--${cell.building}`);
+      } else {
+        $cell.classList.add(`cell--${cell.terrain}`);
+        const emoji = TERRAIN_EMOJI[cell.terrain];
+        if (emoji) {
+          const $e = document.createElement('span');
+          $e.className = 'cell-emoji';
+          $e.textContent = emoji;
+          $cell.appendChild($e);
+        }
+      }
+
+      $grid.appendChild($cell);
     }
   }
 }
@@ -184,13 +171,6 @@ function renderTilePreview() {
       if (filled.has(`${r},${c}`)) {
         $cell.classList.add('preview-cell--filled');
         $cell.style.background = `var(--${currentType})`;
-        const emoji = BUILDING_EMOJI[currentType];
-        if (emoji) {
-          const $e = document.createElement('span');
-          $e.className = 'cell-emoji';
-          $e.textContent = emoji;
-          $cell.appendChild($e);
-        }
       } else {
         $cell.classList.add('preview-cell--empty');
       }
@@ -208,7 +188,6 @@ function updateHUD() {
 }
 
 function updateGridPreview() {
-  // Clear all preview classes and inline styles from non-building cells
   const cells = $grid.querySelectorAll('.cell');
   cells.forEach($c => {
     $c.classList.remove('cell--preview', 'cell--invalid');
@@ -216,7 +195,7 @@ function updateGridPreview() {
     const c = +$c.dataset.col;
     if (!grid[r][c].building) {
       $c.style.removeProperty('background');
-      // Restore terrain emoji (preview might have replaced it)
+      // Restore terrain emoji
       const terrainEmoji = TERRAIN_EMOJI[grid[r][c].terrain];
       const existing = $c.querySelector('.cell-emoji');
       if (terrainEmoji && !existing) {
@@ -244,14 +223,9 @@ function updateGridPreview() {
     if (pendingValid) {
       $cell.classList.add('cell--preview');
       $cell.style.background = `var(--${currentType})`;
-      // Show building emoji in preview
-      let $e = $cell.querySelector('.cell-emoji');
-      if (!$e) {
-        $e = document.createElement('span');
-        $e.className = 'cell-emoji';
-        $cell.appendChild($e);
-      }
-      $e.textContent = BUILDING_EMOJI[currentType];
+      // Hide terrain emoji during preview
+      const $e = $cell.querySelector('.cell-emoji');
+      if ($e) $e.textContent = '';
     } else {
       $cell.classList.add('cell--invalid');
     }
@@ -261,11 +235,8 @@ function updateGridPreview() {
 // ===== Input =====
 function bindEvents() {
   $grid.addEventListener('click', onGridClick);
-
-  // Desktop: show live hover preview
   $grid.addEventListener('pointermove', onGridHover);
   $grid.addEventListener('pointerleave', () => {
-    // Only clear on desktop (hover); on touch, keep pending
     if (!('ontouchstart' in window)) {
       clearPending();
       updateGridPreview();
@@ -296,20 +267,17 @@ function onGridClick(e) {
   const r = +$cell.dataset.row;
   const c = +$cell.dataset.col;
 
-  // If tapping the same anchor that's already pending and valid -> confirm
   if (pendingAnchor && pendingAnchor[0] === r && pendingAnchor[1] === c && pendingValid) {
     doPlace(r, c);
     return;
   }
 
-  // Otherwise, set/move the pending preview
   setPending(r, c);
   updateGridPreview();
 }
 
 function onGridHover(e) {
   if (gameOver) return;
-  // Ignore hover on touch devices
   if (e.pointerType === 'touch') return;
 
   const $cell = document.elementFromPoint(e.clientX, e.clientY);
@@ -328,9 +296,7 @@ function onRotate() {
   if (gameOver) return;
   currentShape = rotateShape(currentShape);
   renderTilePreview();
-  if (pendingAnchor) {
-    setPending(pendingAnchor[0], pendingAnchor[1]);
-  }
+  if (pendingAnchor) setPending(pendingAnchor[0], pendingAnchor[1]);
   updateGridPreview();
 }
 
@@ -338,9 +304,7 @@ function onFlip() {
   if (gameOver) return;
   currentShape = flipShape(currentShape);
   renderTilePreview();
-  if (pendingAnchor) {
-    setPending(pendingAnchor[0], pendingAnchor[1]);
-  }
+  if (pendingAnchor) setPending(pendingAnchor[0], pendingAnchor[1]);
   updateGridPreview();
 }
 
@@ -368,20 +332,13 @@ function onKeyDown(e) {
 function doPlace(r, c) {
   const placed = placeTile(grid, currentShape, r, c, currentType);
 
-  // Update placed cells in DOM
   for (const [pr, pc] of placed) {
     const $cell = $grid.querySelector(`[data-row="${pr}"][data-col="${pc}"]`);
     if ($cell) {
       $cell.className = `cell cell--${currentType} cell--just-placed`;
       $cell.style.removeProperty('background');
-      // Update emoji
-      let $e = $cell.querySelector('.cell-emoji');
-      if (!$e) {
-        $e = document.createElement('span');
-        $e.className = 'cell-emoji';
-        $cell.appendChild($e);
-      }
-      $e.textContent = BUILDING_EMOJI[currentType];
+      const $e = $cell.querySelector('.cell-emoji');
+      if ($e) $e.remove();
     }
   }
 
@@ -439,24 +396,19 @@ function showGameOver(result) {
   const stars = getStars(result.total);
   const d = result.details;
 
+  const groupRows = COLORS.map(c =>
+    `<div class="score-row"><span class="label"><span class="legend-swatch" style="background:var(--${c});display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:middle;margin-right:4px"></span>${COLOR_NAMES[c]} group</span><span class="value positive">+${d.groups[c]}</span></div>`
+  ).join('');
+
   const html = `
     <div class="game-over-title">Bird City #${puzzleNumber}</div>
     <div class="game-over-score">${result.total}</div>
     <div class="game-over-stars">${'\u2B50'.repeat(stars)}${'\u2606'.repeat(5 - stars)}</div>
 
     <div class="score-breakdown">
-      <div class="score-row"><span class="label">\u{1F3E0} Houses (${d.houseBase} cells)</span><span class="value positive">+${d.houseBase}</span></div>
-      ${d.houseParkBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F333} Park adjacency</span><span class="value positive">+${d.houseParkBonus}</span></div>` : ''}
-      ${d.houseFactoryPenalty ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F3ED} Factory penalty</span><span class="value negative">-${d.houseFactoryPenalty * 2}</span></div>` : ''}
-      <div class="score-row"><span class="label">\u{1F333} Parks (${Math.floor(d.parkBase / 2)} cells)</span><span class="value positive">+${d.parkBase}</span></div>
-      ${d.parkTreeBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F332} Tree adjacency</span><span class="value positive">+${d.parkTreeBonus}</span></div>` : ''}
-      ${d.parkNoHousePenalty ? `<div class="score-row"><span class="label">&nbsp;&nbsp;Parks w/o houses</span><span class="value negative">${d.parkNoHousePenalty} wasted</span></div>` : ''}
-      <div class="score-row"><span class="label">\u{1F3EA} Shops (${d.shopBase} cells)</span><span class="value positive">+${d.shopBase}</span></div>
-      ${d.shopRiverBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;\u{1F30A} River adjacency</span><span class="value positive">+${d.shopRiverBonus}</span></div>` : ''}
-      ${d.shopClusterBonus ? `<div class="score-row"><span class="label">&nbsp;&nbsp;Cluster bonus</span><span class="value positive">+${d.shopClusterBonus}</span></div>` : ''}
-      <div class="score-row"><span class="label">\u{1F3ED} Factories (${Math.floor(d.factoryBase / 3)} cells)</span><span class="value positive">+${d.factoryBase}</span></div>
-      ${d.completeRows ? `<div class="score-row"><span class="label">Complete rows (${d.completeRows})</span><span class="value positive">+${d.completeRows * 2}</span></div>` : ''}
-      ${d.uncoveredRocks ? `<div class="score-row"><span class="label">\u{1FAA8} Uncovered rocks (${d.uncoveredRocks})</span><span class="value negative">-${d.uncoveredRocks}</span></div>` : ''}
+      ${groupRows}
+      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees preserved</span><span class="value positive">+${d.treesUncovered}</span></div>` : ''}
+      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Uncovered rocks</span><span class="value negative">-${d.rocksUncovered}</span></div>` : ''}
       ${d.skippedTiles ? `<div class="score-row"><span class="label">Skipped tiles (${d.skippedTiles})</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
       <div class="score-row"><span class="label">Total</span><span class="value">${result.total}</span></div>
     </div>
@@ -515,37 +467,36 @@ function showHelp() {
   openModal(`
     <h2>How to Play</h2>
     <div class="help-section">
-      <p>Build your city by placing tiles on the grid. Each day brings a new puzzle with the same tiles for everyone.</p>
+      <p>Build your city by placing colored tiles on the grid. Each day everyone gets the same tiles in the same order.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>Placement</h3>
+      <p>Tiles must be placed <strong>next to the river</strong> or <strong>next to existing tiles</strong>. You grow your city outward from the river.</p>
     </div>
 
     <div class="help-section">
       <h3>Controls</h3>
-      <p><strong>Tap</strong> a grid cell to preview tile placement.<br>
-      <strong>Tap again</strong> or press <strong>Place</strong> to confirm.<br>
-      <strong>Rotate</strong> (R) and <strong>Flip</strong> (F) to transform tiles.<br>
-      <strong>Skip</strong> (S) to discard a tile (-2 points).</p>
+      <p><strong>Tap</strong> to preview, <strong>tap again</strong> or <strong>Place</strong> to confirm.<br>
+      <strong>Rotate</strong> (R) and <strong>Flip</strong> (F) to transform.<br>
+      <strong>Skip</strong> (S) to discard a tile (-2 pts).</p>
     </div>
 
     <div class="help-section">
-      <h3>Buildings</h3>
+      <h3>Colors</h3>
       <div class="building-legend">
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--house)">\u{1F3E0}</div><div><strong>House</strong><br>1pt, +1 near parks</div></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--park)">\u{1F333}</div><div><strong>Park</strong><br>2pt near houses</div></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--shop)">\u{1F3EA}</div><div><strong>Shop</strong><br>1pt, river + cluster</div></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--factory)">\u{1F3ED}</div><div><strong>Factory</strong><br>3pt, -2 near houses</div></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--rust)"></div><strong>Rust</strong></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--sand)"></div><strong>Sand</strong></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--sage)"></div><strong>Sage</strong></div>
       </div>
     </div>
 
     <div class="help-section">
-      <h3>Terrain</h3>
-      <p>\u{1F30A} <strong>River</strong> -- bonus for nearby shops<br>
-      \u{1F332} <strong>Trees</strong> -- bonus for nearby parks<br>
-      \u{1FAA8} <strong>Rocks</strong> -- penalty if uncovered</p>
-    </div>
-
-    <div class="help-section">
       <h3>Scoring</h3>
-      <p>Complete rows: +2 bonus. Connected shop clusters earn extra. Avoid uncovered rocks!</p>
+      <p>Your <strong>largest connected group</strong> of each color scores points equal to its size.<br>
+      \u{1F332} Trees left uncovered: +1 each<br>
+      \u{1FAA8} Rocks left uncovered: -1 each<br>
+      Skipped tiles: -2 each</p>
     </div>
   `);
 }

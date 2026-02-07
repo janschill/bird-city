@@ -12,17 +12,16 @@
   --text-muted: #9a9a8e;
   --accent: #d94040;
 
-  /* Building colors */
-  --house: #c87040;
-  --park: #4a9e4a;
-  --shop: #c9a033;
-  --factory: #7e6b8a;
+  /* Tile colors (warm palette) */
+  --rust: #b86848;
+  --sand: #c8a870;
+  --sage: #8a9868;
 
   /* Terrain colors */
   --terrain-empty: #333330;
   --terrain-rock: #4e4a42;
   --terrain-tree: #2e4a2e;
-  --terrain-river: #2e5570;
+  --terrain-river: #3a5a6a;
 
   /* Grid */
   --cell-size: min(calc((100vw - 40px) / 7), calc((100vh - 340px) / 10));
@@ -150,11 +149,13 @@ html, body {
 .cell--tree { background: var(--terrain-tree); }
 .cell--river { background: var(--terrain-river); }
 
-/* Building styles */
-.cell--house { background: var(--house); }
-.cell--park { background: var(--park); }
-.cell--shop { background: var(--shop); }
-.cell--factory { background: var(--factory); }
+/* Tile color styles */
+.cell--rust { background: var(--rust); }
+.cell--sand { background: var(--sand); }
+.cell--sage { background: var(--sage); }
+
+/* River (non-buildable) */
+.cell--river { background: var(--terrain-river); }
 
 /* Ghost preview (pending placement) */
 .cell--preview {
@@ -245,8 +246,8 @@ html, body {
 }
 
 .place-btn {
-  background: var(--park);
-  border-color: var(--park);
+  background: var(--sage);
+  border-color: var(--sage);
   color: white;
   font-weight: 700;
   font-size: 13px;
@@ -368,13 +369,13 @@ html, body {
 .score-row .label { color: var(--text-muted); }
 .score-row .value { color: var(--text); font-weight: 600; }
 .score-row .value.negative { color: var(--accent); }
-.score-row .value.positive { color: var(--park); }
+.score-row .value.positive { color: var(--sage); }
 
 .btn-share {
   display: block;
   width: 100%;
   padding: 14px;
-  background: var(--park);
+  background: var(--sage);
   color: white;
   border: none;
   border-radius: var(--radius);
