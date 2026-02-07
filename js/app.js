@@ -158,8 +158,8 @@ function renderTilePreview() {
   }
 
   const bounds = shapeBounds(currentShape);
-  $tilePreview.style.gridTemplateColumns = `repeat(${bounds.cols}, calc(var(--cell-size) * 0.6))`;
-  $tilePreview.style.gridTemplateRows = `repeat(${bounds.rows}, calc(var(--cell-size) * 0.6))`;
+  $tilePreview.style.gridTemplateColumns = `repeat(${bounds.cols}, calc(var(--cell-size) * 0.5))`;
+  $tilePreview.style.gridTemplateRows = `repeat(${bounds.rows}, calc(var(--cell-size) * 0.5))`;
 
   $tilePreview.innerHTML = '';
   const filled = new Set(currentShape.map(([r, c]) => `${r},${c}`));
