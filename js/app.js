@@ -3,7 +3,7 @@
  */
 
 import { COLS, ROWS, createGrid, canPlace, placeTile } from './grid.js';
-import { COLORS, rotateShape, flipShape, shapeBounds } from './tiles.js';
+import { COLORS, rotateShape, shapeBounds } from './tiles.js';
 import { calculateScore, getStars, runningScore } from './scoring.js';
 import { getPuzzleNumber, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
@@ -42,11 +42,13 @@ const $tilePreview = document.getElementById('tile-preview');
 const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
 const $btnRotate = document.getElementById('btn-rotate');
-const $btnFlip = document.getElementById('btn-flip');
 const $btnPlace = document.getElementById('btn-place');
 const $btnSkip = document.getElementById('btn-skip');
 const $btnStats = document.getElementById('btn-stats');
-const $btnHelp = document.getElementById('btn-help');
+const $btnMenu = document.getElementById('btn-menu');
+const $headerMenu = document.getElementById('header-menu');
+const $btnHelpMenu = document.getElementById('btn-help-menu');
+const $btnRestartMenu = document.getElementById('btn-restart-menu');
 const $modalOverlay = document.getElementById('modal-overlay');
 const $modal = document.getElementById('modal');
 const $modalContent = document.getElementById('modal-content');
@@ -244,12 +246,20 @@ function bindEvents() {
   });
 
   $btnRotate.addEventListener('click', onRotate);
-  $btnFlip.addEventListener('click', onFlip);
   $btnPlace.addEventListener('click', onPlace);
   $btnSkip.addEventListener('click', onSkip);
 
   $btnStats.addEventListener('click', showStats);
-  $btnHelp.addEventListener('click', showHelp);
+
+  // Menu dropdown
+  $btnMenu.addEventListener('click', toggleMenu);
+  $btnHelpMenu.addEventListener('click', () => { closeMenu(); showHelp(); });
+  $btnRestartMenu.addEventListener('click', () => { closeMenu(); showRestartConfirm(); });
+  document.addEventListener('click', (e) => {
+    if (!$headerMenu.classList.contains('hidden') && !$btnMenu.contains(e.target) && !$headerMenu.contains(e.target)) {
+      closeMenu();
+    }
+  });
 
   $modalOverlay.addEventListener('click', (e) => {
     if (e.target === $modalOverlay) closeModal();
@@ -300,14 +310,6 @@ function onRotate() {
   updateGridPreview();
 }
 
-function onFlip() {
-  if (gameOver) return;
-  currentShape = flipShape(currentShape);
-  renderTilePreview();
-  if (pendingAnchor) setPending(pendingAnchor[0], pendingAnchor[1]);
-  updateGridPreview();
-}
-
 function onPlace() {
   if (gameOver || !pendingAnchor || !pendingValid) return;
   doPlace(pendingAnchor[0], pendingAnchor[1]);
@@ -323,7 +325,6 @@ function onSkip() {
 function onKeyDown(e) {
   if (gameOver) return;
   if (e.key === 'r' || e.key === 'R') onRotate();
-  if (e.key === 'f' || e.key === 'F') onFlip();
   if (e.key === 's' || e.key === 'S') onSkip();
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlace(); }
 }
@@ -380,6 +381,33 @@ function endGame() {
   updateHUD();
 
   setTimeout(() => showGameOver(result), 400);
+}
+
+// ===== Menu =====
+function toggleMenu() {
+  $headerMenu.classList.toggle('hidden');
+}
+
+function closeMenu() {
+  $headerMenu.classList.add('hidden');
+}
+
+function showRestartConfirm() {
+  openModal(`
+    <h2>Restart Puzzle?</h2>
+    <p>Your current progress will be lost.</p>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn-share" id="btn-cancel-restart" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);flex:1;">Cancel</button>
+      <button class="btn-share" id="btn-confirm-restart" style="background:var(--accent);flex:1;">Restart</button>
+    </div>
+  `);
+
+  document.getElementById('btn-cancel-restart').addEventListener('click', closeModal);
+  document.getElementById('btn-confirm-restart').addEventListener('click', () => {
+    closeModal();
+    clearGameState();
+    startNewGame();
+  });
 }
 
 // ===== Modals =====
@@ -478,7 +506,7 @@ function showHelp() {
     <div class="help-section">
       <h3>Controls</h3>
       <p><strong>Tap</strong> to preview, <strong>tap again</strong> or <strong>Place</strong> to confirm.<br>
-      <strong>Rotate</strong> (R) and <strong>Flip</strong> (F) to transform.<br>
+      <strong>Rotate</strong> (R) to turn the tile.<br>
       <strong>Skip</strong> (S) to discard a tile (-2 pts).</p>
     </div>
 

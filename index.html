@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#1c1c1c">
+  <meta name="theme-color" content="#ffffff">
   <title>Bird City</title>
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
   <div id="app">
@@ -18,11 +18,17 @@
         </svg>
       </button>
       <h1>Bird City</h1>
-      <button id="btn-help" class="icon-btn" aria-label="Help">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      </button>
+      <div class="header-right">
+        <button id="btn-menu" class="icon-btn" aria-label="Menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+          </svg>
+        </button>
+        <div id="header-menu" class="header-menu hidden">
+          <button id="btn-help-menu" class="menu-item">How to Play</button>
+          <button id="btn-restart-menu" class="menu-item menu-item--danger">Restart Puzzle</button>
+        </div>
+      </div>
     </header>
 
     <!-- Game area -->
@@ -49,11 +55,6 @@
               <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
             </svg>
           </button>
-          <button id="btn-flip" class="control-btn" aria-label="Flip">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="7 2 3 6 7 10"/><polyline points="17 2 21 6 17 10"/><line x1="3" y1="6" x2="21" y2="6"/>
-            </svg>
-          </button>
           <button id="btn-place" class="control-btn place-btn" disabled aria-label="Place tile">PLACE</button>
           <button id="btn-skip" class="control-btn skip-btn" aria-label="Skip tile">SKIP<span class="skip-cost">-2</span></button>
         </div>
@@ -69,6 +70,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=3"></script>
+  <script type="module" src="js/app.js?v=4"></script>
 </body>
 </html>
