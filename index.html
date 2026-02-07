@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#2c2c2c">
+  <title>Bird City</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header id="header">
+      <button id="btn-stats" class="icon-btn" aria-label="Stats">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="14" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="16" y="4" width="4" height="17" rx="1"/>
+        </svg>
+      </button>
+      <h1>Bird City</h1>
+      <button id="btn-help" class="icon-btn" aria-label="Help">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Game area -->
+    <main id="game-area">
+      <!-- Score bar -->
+      <div id="score-bar">
+        <span id="score-display">Score: 0</span>
+        <span id="tile-counter">Tile 1 / 22</span>
+      </div>
+
+      <!-- City grid -->
+      <div id="grid-container">
+        <div id="grid"></div>
+      </div>
+
+      <!-- Current tile preview + controls -->
+      <div id="tile-panel">
+        <div id="tile-preview-area">
+          <div id="tile-preview"></div>
+        </div>
+        <div id="tile-controls">
+          <button id="btn-rotate" class="control-btn" aria-label="Rotate">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+          </button>
+          <button id="btn-flip" class="control-btn" aria-label="Flip">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="7 2 3 6 7 10"/><polyline points="17 2 21 6 17 10"/><line x1="3" y1="6" x2="21" y2="6"/>
+            </svg>
+          </button>
+          <button id="btn-skip" class="control-btn skip-btn" aria-label="Skip tile">Skip<span class="skip-cost">-2</span></button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div id="modal" class="modal">
+        <button class="modal-close" aria-label="Close">&times;</button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
