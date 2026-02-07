@@ -183,7 +183,7 @@ html, body {
   height: var(--cell-size);
   border-radius: 4px;
   border: 2px solid var(--border-color);
-  touch-action: manipulation;
+  touch-action: none;
   transition: background 0.15s, transform 0.1s, opacity 0.15s;
   cursor: pointer;
   position: relative;

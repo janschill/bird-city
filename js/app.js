@@ -132,6 +132,14 @@ function setPending(r, c) {
   $btnPlace.disabled = !pendingValid;
 }
 
+/**
+ * Compute anchor row,col so the shape is centered on the given cell.
+ */
+function centeredAnchor(r, c) {
+  const bounds = shapeBounds(currentShape);
+  return [r - Math.floor(bounds.rows / 2), c - Math.floor(bounds.cols / 2)];
+}
+
 // ===== Rendering =====
 function renderGrid() {
   $grid.innerHTML = '';
@@ -283,21 +291,26 @@ function updateGridPreview() {
 
 // ===== Input =====
 function bindEvents() {
-  // Grid: tap to preview, hover for preview (desktop)
+  // Grid: tap to preview (centered), drag to reposition
   $grid.addEventListener('click', onGridClick);
   $grid.addEventListener('pointermove', onGridHover);
   $grid.addEventListener('pointerleave', () => {
-    if (!('ontouchstart' in window)) {
+    if (!('ontouchstart' in window) && !dragState) {
       clearPending();
       updateGridPreview();
     }
   });
 
-  // Preview area: tap to rotate, drag to preview on grid
-  $tilePreviewArea.addEventListener('pointerdown', onPreviewPointerDown);
-  $tilePreviewArea.addEventListener('pointermove', onPreviewPointerMove);
-  $tilePreviewArea.addEventListener('pointerup', onPreviewPointerUp);
-  $tilePreviewArea.addEventListener('pointercancel', onPreviewPointerCancel);
+  // Grid: drag to reposition a pending piece
+  $grid.addEventListener('pointerdown', onDragPointerDown);
+
+  // Preview area: tap to rotate, drag to position on grid
+  $tilePreviewArea.addEventListener('pointerdown', onDragPointerDown);
+
+  // Drag move/up on document so we capture movement everywhere
+  document.addEventListener('pointermove', onDragPointerMove);
+  document.addEventListener('pointerup', onDragPointerUp);
+  document.addEventListener('pointercancel', onDragPointerCancel);
 
   $btnPlace.addEventListener('click', onPlace);
   $btnSkip.addEventListener('click', onSkip);
@@ -323,21 +336,22 @@ function bindEvents() {
   document.addEventListener('keydown', onKeyDown);
 }
 
-// --- Grid interaction: tap to preview position ---
+// --- Grid interaction: tap to preview position (centered) ---
 function onGridClick(e) {
-  if (gameOver) return;
+  if (gameOver || dragState) return;
   const $cell = e.target.closest('.cell');
   if (!$cell) return;
 
   const r = +$cell.dataset.row;
   const c = +$cell.dataset.col;
+  const [ar, ac] = centeredAnchor(r, c);
 
-  setPending(r, c);
+  setPending(ar, ac);
   updateGridPreview();
 }
 
 function onGridHover(e) {
-  if (gameOver) return;
+  if (gameOver || dragState) return;
   if (e.pointerType === 'touch') return;
 
   const $cell = document.elementFromPoint(e.clientX, e.clientY);
@@ -345,22 +359,36 @@ function onGridHover(e) {
 
   const r = +$cell.dataset.row;
   const c = +$cell.dataset.col;
+  const [ar, ac] = centeredAnchor(r, c);
 
-  if (!pendingAnchor || pendingAnchor[0] !== r || pendingAnchor[1] !== c) {
-    setPending(r, c);
+  if (!pendingAnchor || pendingAnchor[0] !== ar || pendingAnchor[1] !== ac) {
+    setPending(ar, ac);
     updateGridPreview();
   }
 }
 
-// --- Preview area: tap to rotate, drag to preview on grid ---
-function onPreviewPointerDown(e) {
-  if (gameOver) return;
-  $tilePreviewArea.setPointerCapture(e.pointerId);
-  dragState = { startX: e.clientX, startY: e.clientY, dragging: false };
+// --- Unified drag: works from preview area OR from grid ---
+function onDragPointerDown(e) {
+  if (gameOver || dragState) return;
+
+  const fromPreview = $tilePreviewArea.contains(e.target);
+  const fromGrid = $grid.contains(e.target);
+
+  // Only start drag from preview area or from grid (if there's a pending preview)
+  if (!fromPreview && !(fromGrid && pendingAnchor)) return;
+
+  e.preventDefault();
+  dragState = {
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    dragging: false,
+    source: fromPreview ? 'preview' : 'grid',
+  };
 }
 
-function onPreviewPointerMove(e) {
-  if (!dragState) return;
+function onDragPointerMove(e) {
+  if (!dragState || e.pointerId !== dragState.pointerId) return;
 
   const dx = e.clientX - dragState.startX;
   const dy = e.clientY - dragState.startY;
@@ -368,17 +396,17 @@ function onPreviewPointerMove(e) {
   // Start dragging after moving 10px
   if (!dragState.dragging && (dx * dx + dy * dy > 100)) {
     dragState.dragging = true;
-    $tilePreviewArea.style.cursor = 'grabbing';
   }
 
   if (dragState.dragging) {
-    // Find which grid cell we're over
+    // Find which grid cell we're over (center the shape on it)
     const $cell = getCellAtPoint(e.clientX, e.clientY);
     if ($cell) {
       const r = +$cell.dataset.row;
       const c = +$cell.dataset.col;
-      if (!pendingAnchor || pendingAnchor[0] !== r || pendingAnchor[1] !== c) {
-        setPending(r, c);
+      const [ar, ac] = centeredAnchor(r, c);
+      if (!pendingAnchor || pendingAnchor[0] !== ar || pendingAnchor[1] !== ac) {
+        setPending(ar, ac);
         updateGridPreview();
       }
     } else {
@@ -391,43 +419,35 @@ function onPreviewPointerMove(e) {
   }
 }
 
-function onPreviewPointerUp(e) {
-  if (!dragState) return;
+function onDragPointerUp(e) {
+  if (!dragState || e.pointerId !== dragState.pointerId) return;
 
-  if (dragState.dragging) {
-    // Drop: keep preview showing (PLACE button to confirm)
-    // pendingAnchor and pendingValid are already set from pointermove
-    // If we dropped outside the grid, pending is already cleared
-  } else {
-    // Tap (no drag) → rotate
+  if (!dragState.dragging && dragState.source === 'preview') {
+    // Tap on preview (no drag) → rotate
     onRotate();
   }
+  // If dragging, keep the preview where it is (PLACE to confirm)
 
-  $tilePreviewArea.style.cursor = 'grab';
   dragState = null;
 }
 
-function onPreviewPointerCancel() {
-  if (dragState) {
-    clearPending();
-    updateGridPreview();
-    $tilePreviewArea.style.cursor = 'grab';
-    dragState = null;
-  }
+function onDragPointerCancel(e) {
+  if (!dragState || e.pointerId !== dragState.pointerId) return;
+  clearPending();
+  updateGridPreview();
+  dragState = null;
 }
 
 /**
- * Find grid cell under a screen point, ignoring pointer-events.
+ * Find grid cell under a screen point, looking through overlays.
  */
 function getCellAtPoint(x, y) {
-  // Temporarily hide the preview area overlay to hit-test the grid
-  const prev = $tilePreviewArea.style.pointerEvents;
-  $tilePreviewArea.style.pointerEvents = 'none';
-  const el = document.elementFromPoint(x, y);
-  $tilePreviewArea.style.pointerEvents = prev;
-
-  if (!el) return null;
-  return el.closest('.cell');
+  const els = document.elementsFromPoint(x, y);
+  for (const el of els) {
+    const cell = el.closest('.cell');
+    if (cell && $grid.contains(cell)) return cell;
+  }
+  return null;
 }
 
 function onRotate() {
