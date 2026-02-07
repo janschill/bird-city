@@ -33,9 +33,8 @@ const SHAPES = {
   square: [[0,0],[0,1],[1,0],[1,1]],
 
   // ▪▪
-  // ▪
-  // ▪▪ (5 cells, C/U-shape)
-  cup: [[0,0],[0,1],[1,0],[2,0],[2,1]],
+  // ▪  (3 cells, small L)
+  ell: [[0,0],[0,1],[1,0]],
 };
 
 export const SHAPE_KEYS = Object.keys(SHAPES);

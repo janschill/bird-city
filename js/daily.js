@@ -4,7 +4,7 @@
 
 import { SHAPE_KEYS, COLORS, getShape } from './tiles.js';
 
-const TILES_PER_GAME = 22;
+const TILES_PER_GAME = 14;
 
 /**
  * Puzzle number (days since epoch).
