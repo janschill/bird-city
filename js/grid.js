@@ -30,12 +30,12 @@ export function createGrid(rng) {
   // Place river (meanders top to bottom, 1 cell wide)
   placeRiver(grid, rng);
 
-  // Place rocks (8-10), avoiding river
-  const numRocks = 8 + Math.floor(rng() * 3);
+  // Place rocks (5-7), avoiding river
+  const numRocks = 5 + Math.floor(rng() * 3);
   placeFeatures(grid, TERRAIN.ROCK, numRocks, rng);
 
-  // Place trees (4-6), avoiding river and rocks
-  const numTrees = 4 + Math.floor(rng() * 3);
+  // Place trees (5-7), avoiding river and rocks
+  const numTrees = 5 + Math.floor(rng() * 3);
   placeFeatures(grid, TERRAIN.TREE, numTrees, rng);
 
   return grid;
