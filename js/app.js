@@ -37,6 +37,9 @@ let gameOver;
 let pendingAnchor = null;
 let pendingValid = false;
 
+// Undo stack
+let undoStack = [];
+
 // Drag state
 let dragState = null; // { pointerId, startX, startY, dragging, source, $ghost }
 let rafPending = false;
@@ -50,6 +53,7 @@ const $seqRight = document.getElementById('seq-right');
 const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
 const $tilePreviewArea = document.getElementById('tile-preview-area');
+const $btnUndo = document.getElementById('btn-undo');
 const $btnPlace = document.getElementById('btn-place');
 const $btnSkip = document.getElementById('btn-skip');
 const $btnStats = document.getElementById('btn-stats');
@@ -75,6 +79,8 @@ function init() {
 
   if (hasCompletedToday(puzzleNumber)) {
     startNewGame();
+    gameOver = true;
+    document.getElementById('tile-panel').classList.add('hidden');
     showAlreadyCompleted();
     return;
   }
@@ -94,7 +100,10 @@ function startNewGame() {
   currentTileIndex = 0;
   skippedCount = 0;
   gameOver = false;
+  undoStack = [];
+  $btnUndo.disabled = true;
   clearPending();
+  showTilePanel();
 
   loadCurrentTile();
   renderGrid();
@@ -109,6 +118,8 @@ function restoreGame(saved) {
   currentTileIndex = saved.currentTileIndex;
   skippedCount = saved.skippedCount;
   gameOver = false;
+  undoStack = [];
+  $btnUndo.disabled = true;
   clearPending();
 
   loadCurrentTile();
@@ -319,6 +330,7 @@ function bindEvents() {
   document.addEventListener('pointerup', onDragPointerUp);
   document.addEventListener('pointercancel', onDragPointerCancel);
 
+  $btnUndo.addEventListener('click', onUndo);
   $btnPlace.addEventListener('click', onPlace);
   $btnSkip.addEventListener('click', onSkip);
 
@@ -561,6 +573,7 @@ function onPlace() {
 
 function onSkip() {
   if (gameOver) return;
+  pushUndo();
   skippedCount++;
   clearPending();
   advanceTile();
@@ -570,11 +583,45 @@ function onKeyDown(e) {
   if (gameOver) return;
   if (e.key === 'r' || e.key === 'R') onRotate();
   if (e.key === 's' || e.key === 'S') onSkip();
+  if (e.key === 'u' || e.key === 'U' || (e.key === 'z' && (e.ctrlKey || e.metaKey))) { e.preventDefault(); onUndo(); }
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlace(); }
+}
+
+// ===== Undo =====
+function cloneGrid(g) {
+  return g.map(row => row.map(cell => ({ ...cell })));
+}
+
+function pushUndo() {
+  undoStack.push({
+    grid: cloneGrid(grid),
+    currentTileIndex,
+    skippedCount,
+  });
+  $btnUndo.disabled = false;
+}
+
+function onUndo() {
+  if (gameOver || undoStack.length === 0) return;
+  const snapshot = undoStack.pop();
+  grid = snapshot.grid;
+  currentTileIndex = snapshot.currentTileIndex;
+  skippedCount = snapshot.skippedCount;
+  clearPending();
+
+  loadCurrentTile();
+  renderGrid();
+  renderTilePreview();
+  renderSequence();
+  updateHUD();
+
+  $btnUndo.disabled = undoStack.length === 0;
+  saveProgress();
 }
 
 // ===== Game Actions =====
 function doPlace(r, c) {
+  pushUndo();
   const placed = placeTile(grid, currentShape, r, c, currentType);
 
   for (const [pr, pc] of placed) {
@@ -625,8 +672,57 @@ function endGame() {
   renderGrid();
   $tilePreview.innerHTML = '';
   updateHUD();
+  showPostGamePanel(result);
 
   setTimeout(() => showGameOver(result), 400);
+}
+
+function showTilePanel() {
+  const $tilePanel = document.getElementById('tile-panel');
+  const $postGame = document.getElementById('post-game-panel');
+  $tilePanel.classList.remove('hidden');
+  if ($postGame) $postGame.remove();
+}
+
+function showPostGamePanel(result) {
+  const $tilePanel = document.getElementById('tile-panel');
+  $tilePanel.classList.add('hidden');
+
+  const existing = document.getElementById('post-game-panel');
+  if (existing) existing.remove();
+
+  const d = result.details;
+  const groupRows = COLORS.map(c =>
+    `<div class="score-row"><span class="label"><span class="legend-swatch" style="background:var(--${c});display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;margin-right:4px"></span>${COLOR_NAMES[c]}</span><span class="value positive">+${d.groups[c]}</span></div>`
+  ).join('');
+
+  const $panel = document.createElement('div');
+  $panel.id = 'post-game-panel';
+  $panel.innerHTML = `
+    <div class="score-breakdown">
+      ${groupRows}
+      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees</span><span class="value positive">+${d.treesUncovered}</span></div>` : ''}
+      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Rocks</span><span class="value negative">-${d.rocksUncovered}</span></div>` : ''}
+      ${d.skippedTiles ? `<div class="score-row"><span class="label">Skipped (${d.skippedTiles})</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
+      <div class="score-row"><span class="label">Total</span><span class="value">${result.total}</span></div>
+    </div>
+    <div class="post-game-actions">
+      <button class="btn-share" id="btn-share-inline">Share</button>
+      <button class="btn-share" id="btn-details-inline" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);">Details</button>
+    </div>
+  `;
+
+  document.getElementById('game-area').appendChild($panel);
+
+  document.getElementById('btn-share-inline').addEventListener('click', async () => {
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant);
+    await copyToClipboard(text);
+    showToast('Copied to clipboard!');
+  });
+
+  document.getElementById('btn-details-inline').addEventListener('click', () => {
+    showGameOver(result);
+  });
 }
 
 // ===== Menu =====
@@ -783,7 +879,8 @@ function showHelp() {
       <p><strong>Tap the grid</strong> or <strong>drag from the preview</strong> to position a tile.<br>
       <strong>Tap the preview</strong> or press <strong>R</strong> to rotate.<br>
       Press <strong>Place</strong> to confirm.<br>
-      <strong>Skip</strong> (S) to discard a tile (-2 pts).</p>
+      <strong>Skip</strong> (S) to discard a tile (-2 pts).<br>
+      <strong>Undo</strong> (U / Ctrl+Z) to take back a move.</p>
     </div>
 
     <div class="help-section">
@@ -797,7 +894,7 @@ function showHelp() {
 
     <div class="help-section">
       <h3>Scoring</h3>
-      <p>Your <strong>largest connected group</strong> of each color scores points equal to its size.<br>
+      <p>Your <strong>largest connected group</strong> of each color scores points equal to its size. Groups connect horizontally and vertically (not diagonally).<br>
       \u{1F332} Trees left uncovered: +1 each<br>
       \u{1FAA8} Rocks left uncovered: -1 each<br>
       Skipped tiles: -2 each</p>

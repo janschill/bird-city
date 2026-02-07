@@ -249,6 +249,10 @@ html, body {
 }
 
 /* ===== Tile Panel (below grid) ===== */
+#tile-panel.hidden {
+  display: none;
+}
+
 #tile-panel {
   display: flex;
   flex-direction: column;
@@ -372,6 +376,14 @@ html, body {
   font-weight: 700;
 }
 
+/* Undo button */
+.undo-btn {
+  flex: 0.8;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+
 /* Skip button */
 .skip-btn {
   flex-direction: column;
@@ -385,6 +397,33 @@ html, body {
 .skip-cost {
   font-size: 10px;
   opacity: 0.6;
+}
+
+/* ===== Post-Game Breakdown ===== */
+#post-game-panel {
+  font-size: 12px;
+  padding: 6px 0 2px;
+  flex-shrink: 0;
+}
+
+#post-game-panel .score-breakdown {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+#post-game-panel .score-row {
+  padding: 3px 0;
+}
+
+#post-game-panel .post-game-actions {
+  display: flex;
+  gap: 6px;
+}
+
+#post-game-panel .post-game-actions button {
+  flex: 1;
+  padding: 10px;
+  font-size: 13px;
 }
 
 /* ===== Modal ===== */
