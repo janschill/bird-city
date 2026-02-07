@@ -181,6 +181,7 @@ html, body {
   height: var(--cell-size);
   border-radius: 4px;
   border: 2px solid var(--border-color);
+  touch-action: manipulation;
   transition: background 0.15s, transform 0.1s, opacity 0.15s;
   cursor: pointer;
   position: relative;
@@ -240,7 +241,8 @@ html, body {
   background: var(--bg-surface);
   border-radius: var(--radius);
   padding: 6px 12px;
-  min-height: 48px;
+  /* Fixed height for tallest shape (bar=4 cells × 0.5 + gaps) */
+  height: calc(var(--cell-size) * 2 + 18px);
 }
 
 #tile-preview {
@@ -267,6 +269,7 @@ html, body {
   align-items: center;
   justify-content: center;
   height: 52px;
+  touch-action: manipulation;
   background: var(--bg);
   border: 2px solid var(--border-color);
   border-radius: var(--radius);
