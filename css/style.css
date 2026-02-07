@@ -202,7 +202,22 @@ html, body {
 .cell--empty { background: var(--terrain-empty); border-color: var(--border-color); }
 .cell--rock  { background: var(--terrain-rock);  border-color: #bab0a0; }
 .cell--tree  { background: var(--terrain-tree);  border-color: #98c098; }
-.cell--river { background: var(--terrain-river); border-color: #80b4d0; }
+.cell--river {
+  background: transparent;
+  border-color: transparent;
+}
+
+.cell--river::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 25%;
+  right: 25%;
+  background: var(--terrain-river);
+  border-radius: 3px;
+  pointer-events: none;
+}
 
 /* Tile colors */
 .cell--rust { background: var(--rust); border-color: #a85838; color: white; }
@@ -245,6 +260,13 @@ html, body {
   padding: 6px 12px;
   /* Fixed height for tallest shape (bar=4 cells × 0.5 + gaps) */
   height: calc(var(--cell-size) * 2 + 18px);
+  touch-action: none;
+  cursor: grab;
+  transition: background 0.15s;
+}
+
+#tile-preview-area:active {
+  background: #ebebeb;
 }
 
 #tile-preview {
@@ -322,25 +344,6 @@ html, body {
 .control-btn:disabled {
   opacity: 0.3;
   cursor: default;
-}
-
-/* Place button -- wider and prominent */
-.place-btn {
-  flex: 2;
-  background: var(--sage);
-  border-color: var(--sage);
-  color: white;
-  font-size: 15px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.place-btn:disabled {
-  background: var(--bg-surface);
-  border-color: var(--border-color);
-  color: var(--text-muted);
-  font-weight: 700;
 }
 
 /* Skip button */

@@ -14,7 +14,7 @@ const TERRAIN_EMOJI = {
   empty: '',
   rock: '\u{1FAA8}',
   tree: '\u{1F332}',
-  river: '\u{1F30A}',
+  river: '',
 };
 
 // Color display names
@@ -36,6 +36,9 @@ let gameOver;
 let pendingAnchor = null;
 let pendingValid = false;
 
+// Drag state
+let dragState = null; // { startX, startY, dragging }
+
 // ===== DOM references =====
 const $grid = document.getElementById('grid');
 const $tilePreview = document.getElementById('tile-preview');
@@ -43,8 +46,8 @@ const $seqLeft = document.getElementById('seq-left');
 const $seqRight = document.getElementById('seq-right');
 const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
+const $tilePreviewArea = document.getElementById('tile-preview-area');
 const $btnRotate = document.getElementById('btn-rotate');
-const $btnPlace = document.getElementById('btn-place');
 const $btnSkip = document.getElementById('btn-skip');
 const $btnStats = document.getElementById('btn-stats');
 const $btnMenu = document.getElementById('btn-menu');
@@ -120,13 +123,11 @@ function loadCurrentTile() {
 function clearPending() {
   pendingAnchor = null;
   pendingValid = false;
-  $btnPlace.disabled = true;
 }
 
 function setPending(r, c) {
   pendingAnchor = [r, c];
   pendingValid = canPlace(grid, currentShape, r, c);
-  $btnPlace.disabled = !pendingValid;
 }
 
 // ===== Rendering =====
@@ -280,6 +281,7 @@ function updateGridPreview() {
 
 // ===== Input =====
 function bindEvents() {
+  // Grid: click to place, hover for preview (desktop)
   $grid.addEventListener('click', onGridClick);
   $grid.addEventListener('pointermove', onGridHover);
   $grid.addEventListener('pointerleave', () => {
@@ -289,8 +291,13 @@ function bindEvents() {
     }
   });
 
+  // Preview area: tap to rotate, drag to place
+  $tilePreviewArea.addEventListener('pointerdown', onPreviewPointerDown);
+  $tilePreviewArea.addEventListener('pointermove', onPreviewPointerMove);
+  $tilePreviewArea.addEventListener('pointerup', onPreviewPointerUp);
+  $tilePreviewArea.addEventListener('pointercancel', onPreviewPointerCancel);
+
   $btnRotate.addEventListener('click', onRotate);
-  $btnPlace.addEventListener('click', onPlace);
   $btnSkip.addEventListener('click', onSkip);
 
   $btnStats.addEventListener('click', showStats);
@@ -314,6 +321,7 @@ function bindEvents() {
   document.addEventListener('keydown', onKeyDown);
 }
 
+// --- Grid interaction: tap to place ---
 function onGridClick(e) {
   if (gameOver) return;
   const $cell = e.target.closest('.cell');
@@ -322,13 +330,12 @@ function onGridClick(e) {
   const r = +$cell.dataset.row;
   const c = +$cell.dataset.col;
 
-  if (pendingAnchor && pendingAnchor[0] === r && pendingAnchor[1] === c && pendingValid) {
-    doPlace(r, c);
-    return;
-  }
-
   setPending(r, c);
   updateGridPreview();
+
+  if (pendingValid) {
+    doPlace(r, c);
+  }
 }
 
 function onGridHover(e) {
@@ -347,17 +354,97 @@ function onGridHover(e) {
   }
 }
 
+// --- Preview area: tap to rotate, drag to place ---
+function onPreviewPointerDown(e) {
+  if (gameOver) return;
+  $tilePreviewArea.setPointerCapture(e.pointerId);
+  dragState = { startX: e.clientX, startY: e.clientY, dragging: false };
+}
+
+function onPreviewPointerMove(e) {
+  if (!dragState) return;
+
+  const dx = e.clientX - dragState.startX;
+  const dy = e.clientY - dragState.startY;
+
+  // Start dragging after moving 10px
+  if (!dragState.dragging && (dx * dx + dy * dy > 100)) {
+    dragState.dragging = true;
+    $tilePreviewArea.style.cursor = 'grabbing';
+  }
+
+  if (dragState.dragging) {
+    // Find which grid cell we're over
+    const $cell = getCellAtPoint(e.clientX, e.clientY);
+    if ($cell) {
+      const r = +$cell.dataset.row;
+      const c = +$cell.dataset.col;
+      if (!pendingAnchor || pendingAnchor[0] !== r || pendingAnchor[1] !== c) {
+        setPending(r, c);
+        updateGridPreview();
+      }
+    } else {
+      // Not over the grid
+      if (pendingAnchor) {
+        clearPending();
+        updateGridPreview();
+      }
+    }
+  }
+}
+
+function onPreviewPointerUp(e) {
+  if (!dragState) return;
+
+  if (dragState.dragging) {
+    // Drop: place if valid
+    const $cell = getCellAtPoint(e.clientX, e.clientY);
+    if ($cell && pendingValid) {
+      const r = +$cell.dataset.row;
+      const c = +$cell.dataset.col;
+      doPlace(r, c);
+    } else {
+      clearPending();
+      updateGridPreview();
+    }
+  } else {
+    // Tap (no drag) → rotate
+    onRotate();
+  }
+
+  $tilePreviewArea.style.cursor = 'grab';
+  dragState = null;
+}
+
+function onPreviewPointerCancel() {
+  if (dragState) {
+    clearPending();
+    updateGridPreview();
+    $tilePreviewArea.style.cursor = 'grab';
+    dragState = null;
+  }
+}
+
+/**
+ * Find grid cell under a screen point, ignoring pointer-events.
+ */
+function getCellAtPoint(x, y) {
+  // Temporarily hide the preview area overlay to hit-test the grid
+  const prev = $tilePreviewArea.style.pointerEvents;
+  $tilePreviewArea.style.pointerEvents = 'none';
+  const el = document.elementFromPoint(x, y);
+  $tilePreviewArea.style.pointerEvents = prev;
+
+  if (!el) return null;
+  return el.closest('.cell');
+}
+
 function onRotate() {
   if (gameOver) return;
   currentShape = rotateShape(currentShape);
   renderTilePreview();
   if (pendingAnchor) setPending(pendingAnchor[0], pendingAnchor[1]);
   updateGridPreview();
-}
-
-function onPlace() {
-  if (gameOver || !pendingAnchor || !pendingValid) return;
-  doPlace(pendingAnchor[0], pendingAnchor[1]);
 }
 
 function onSkip() {
@@ -371,7 +458,6 @@ function onKeyDown(e) {
   if (gameOver) return;
   if (e.key === 'r' || e.key === 'R') onRotate();
   if (e.key === 's' || e.key === 'S') onSkip();
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlace(); }
 }
 
 // ===== Game Actions =====
@@ -571,8 +657,9 @@ function showHelp() {
 
     <div class="help-section">
       <h3>Controls</h3>
-      <p><strong>Tap</strong> to preview, <strong>tap again</strong> or <strong>Place</strong> to confirm.<br>
-      <strong>Rotate</strong> (R) to turn the tile.<br>
+      <p><strong>Tap the grid</strong> to place the current tile.<br>
+      <strong>Drag from the preview</strong> onto the grid to place.<br>
+      <strong>Tap the preview</strong> or use <strong>Rotate</strong> (R) to turn the tile.<br>
       <strong>Skip</strong> (S) to discard a tile (-2 pts).</p>
     </div>
 
