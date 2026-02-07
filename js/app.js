@@ -38,7 +38,9 @@ let pendingAnchor = null;
 let pendingValid = false;
 
 // Drag state
-let dragState = null; // { startX, startY, dragging }
+let dragState = null; // { pointerId, startX, startY, dragging, source, $ghost }
+let rafPending = false;
+let lastPointerEvent = null;
 
 // ===== DOM references =====
 const $grid = document.getElementById('grid');
@@ -298,7 +300,7 @@ function updateGridPreview() {
 
 // ===== Input =====
 function bindEvents() {
-  // Grid: tap to preview (centered), drag to reposition
+  // Grid: tap to preview (centered), hover for desktop
   $grid.addEventListener('click', onGridClick);
   $grid.addEventListener('pointermove', onGridHover);
   $grid.addEventListener('pointerleave', () => {
@@ -308,14 +310,12 @@ function bindEvents() {
     }
   });
 
-  // Grid: drag to reposition a pending piece
+  // Drag: from preview area or from grid
   $grid.addEventListener('pointerdown', onDragPointerDown);
-
-  // Preview area: tap to rotate, drag to position on grid
   $tilePreviewArea.addEventListener('pointerdown', onDragPointerDown);
 
-  // Drag move/up on document so we capture movement everywhere
-  document.addEventListener('pointermove', onDragPointerMove);
+  // Drag move/up on document for cross-element tracking
+  document.addEventListener('pointermove', onDragPointerMoveRaw);
   document.addEventListener('pointerup', onDragPointerUp);
   document.addEventListener('pointercancel', onDragPointerCancel);
 
@@ -374,14 +374,63 @@ function onGridHover(e) {
   }
 }
 
-// --- Unified drag: works from preview area OR from grid ---
+// ===== Haptic feedback =====
+function haptic(ms = 10) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
+// ===== Floating drag ghost =====
+function createDragGhost() {
+  const bounds = shapeBounds(currentShape);
+  const cellPx = $grid.querySelector('.cell')?.offsetWidth || 36;
+  const ghostCellSize = cellPx;
+
+  const $ghost = document.createElement('div');
+  $ghost.className = 'drag-ghost';
+  $ghost.style.gridTemplateColumns = `repeat(${bounds.cols}, ${ghostCellSize}px)`;
+  $ghost.style.gridTemplateRows = `repeat(${bounds.rows}, ${ghostCellSize}px)`;
+
+  const filled = new Set(currentShape.map(([r, c]) => `${r},${c}`));
+
+  for (let r = 0; r < bounds.rows; r++) {
+    for (let c = 0; c < bounds.cols; c++) {
+      const $cell = document.createElement('div');
+      if (filled.has(`${r},${c}`)) {
+        $cell.className = 'drag-ghost-cell';
+        $cell.style.background = `var(--${currentType})`;
+      } else {
+        $cell.className = 'drag-ghost-cell drag-ghost-cell--empty';
+      }
+      $ghost.appendChild($cell);
+    }
+  }
+
+  document.body.appendChild($ghost);
+  return { $ghost, width: bounds.cols * (ghostCellSize + 2), height: bounds.rows * (ghostCellSize + 2) };
+}
+
+function positionGhost(ghost, x, y, isTouch) {
+  // Offset above finger on touch so you can see placement
+  const offsetY = isTouch ? -60 : 0;
+  const gx = x - ghost.width / 2;
+  const gy = y - ghost.height / 2 + offsetY;
+  ghost.$ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0)`;
+}
+
+function removeDragGhost() {
+  if (dragState && dragState.ghost) {
+    dragState.ghost.$ghost.remove();
+    dragState.ghost = null;
+  }
+}
+
+// ===== Unified drag: preview area OR grid =====
 function onDragPointerDown(e) {
   if (gameOver || dragState) return;
 
   const fromPreview = $tilePreviewArea.contains(e.target);
   const fromGrid = $grid.contains(e.target);
 
-  // Only start drag from preview area or from grid (if there's a pending preview)
   if (!fromPreview && !(fromGrid && pendingAnchor)) return;
 
   e.preventDefault();
@@ -391,22 +440,48 @@ function onDragPointerDown(e) {
     startY: e.clientY,
     dragging: false,
     source: fromPreview ? 'preview' : 'grid',
+    isTouch: e.pointerType === 'touch',
+    ghost: null,
   };
 }
 
-function onDragPointerMove(e) {
+// rAF-throttled pointermove
+function onDragPointerMoveRaw(e) {
   if (!dragState || e.pointerId !== dragState.pointerId) return;
+  lastPointerEvent = e;
+  if (!rafPending) {
+    rafPending = true;
+    requestAnimationFrame(onDragPointerMoveTick);
+  }
+}
+
+function onDragPointerMoveTick() {
+  rafPending = false;
+  const e = lastPointerEvent;
+  if (!dragState || !e) return;
 
   const dx = e.clientX - dragState.startX;
   const dy = e.clientY - dragState.startY;
 
-  // Start dragging after moving 10px
-  if (!dragState.dragging && (dx * dx + dy * dy > 100)) {
+  // Start dragging after moving 8px
+  if (!dragState.dragging && (dx * dx + dy * dy > 64)) {
     dragState.dragging = true;
+
+    // Create floating ghost
+    dragState.ghost = createDragGhost();
+    positionGhost(dragState.ghost, e.clientX, e.clientY, dragState.isTouch);
+
+    // Visual feedback
+    $tilePreviewArea.classList.add('dragging');
+    $grid.classList.add('grid--dragging');
+    haptic(12);
   }
 
-  if (dragState.dragging) {
-    // Find which grid cell we're over (center the shape on it)
+  if (dragState.dragging && dragState.ghost) {
+    // Move ghost to follow pointer
+    positionGhost(dragState.ghost, e.clientX, e.clientY, dragState.isTouch);
+
+    // Snap to grid cell (center the shape)
     const $cell = getCellAtPoint(e.clientX, e.clientY);
     if ($cell) {
       const r = +$cell.dataset.row;
@@ -415,9 +490,9 @@ function onDragPointerMove(e) {
       if (!pendingAnchor || pendingAnchor[0] !== ar || pendingAnchor[1] !== ac) {
         setPending(ar, ac);
         updateGridPreview();
+        haptic(6);
       }
     } else {
-      // Not over the grid — clear preview
       if (pendingAnchor) {
         clearPending();
         updateGridPreview();
@@ -429,20 +504,32 @@ function onDragPointerMove(e) {
 function onDragPointerUp(e) {
   if (!dragState || e.pointerId !== dragState.pointerId) return;
 
-  if (!dragState.dragging && dragState.source === 'preview') {
+  const wasDragging = dragState.dragging;
+
+  // Clean up ghost and visual state
+  removeDragGhost();
+  $tilePreviewArea.classList.remove('dragging');
+  $grid.classList.remove('grid--dragging');
+
+  if (!wasDragging && dragState.source === 'preview') {
     // Tap on preview (no drag) → rotate
     onRotate();
   }
-  // If dragging, keep the preview where it is (PLACE to confirm)
+  // If was dragging, keep the preview on grid (PLACE to confirm)
 
   dragState = null;
+  lastPointerEvent = null;
 }
 
 function onDragPointerCancel(e) {
   if (!dragState || e.pointerId !== dragState.pointerId) return;
+  removeDragGhost();
+  $tilePreviewArea.classList.remove('dragging');
+  $grid.classList.remove('grid--dragging');
   clearPending();
   updateGridPreview();
   dragState = null;
+  lastPointerEvent = null;
 }
 
 /**
@@ -500,6 +587,7 @@ function doPlace(r, c) {
     }
   }
 
+  haptic(15);
   clearPending();
   saveProgress();
   advanceTile();
