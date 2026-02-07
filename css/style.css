@@ -23,17 +23,17 @@
   --terrain-tree: #b8d8b0;
   --terrain-river: #a0cce8;
 
-  /* Grid -- width accounts for side panels (~22px each + gaps) */
+  /* Grid */
   /* Height: 12 = 10 grid rows + 2 preview rows */
   --grid-gap: 3px;
   --border-color: #d3d6da;
   --radius: 6px;
-  --cell-size: min(calc((100vw - 94px) / 7), calc((100vh - 250px) / 12));
+  --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 280px) / 12));
 }
 
 @supports (height: 1dvh) {
   :root {
-    --cell-size: min(calc((100vw - 94px) / 7), calc((100dvh - 220px) / 12));
+    --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 250px) / 12));
   }
 }
 
@@ -293,13 +293,14 @@ html, body {
 
 .preview-cell--empty { background: transparent; }
 
-/* Side panels: remaining tile inventory */
-.seq-panel {
+/* Sequence bar: tile inventory above the grid */
+#seq-bar {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  width: 24px;
+  justify-content: center;
+  gap: 5px;
+  padding: 2px 4px;
   flex-shrink: 0;
 }
 

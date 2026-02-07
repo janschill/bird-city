@@ -1,8 +1,9 @@
 /**
  * Scoring for Bird City.
  *
- * - Uncovered trees: +1 each
- * - Uncovered rocks: -1 each
+ * - Uncovered trees: +2 each
+ * - Uncovered rocks: -2 each
+ * - Uncovered empty fields: -1 each
  * - Largest connected group per color: +size each
  * - Skipped tiles: -2 each
  */
@@ -14,6 +15,7 @@ export function calculateScore(grid, skippedCount) {
   const details = {
     treesUncovered: 0,
     rocksUncovered: 0,
+    emptyUncovered: 0,
     groups: {},
     skippedTiles: skippedCount,
   };
@@ -23,7 +25,8 @@ export function calculateScore(grid, skippedCount) {
       const cell = grid[r][c];
       if (cell.building === null) {
         if (cell.terrain === TERRAIN.TREE) details.treesUncovered++;
-        if (cell.terrain === TERRAIN.ROCK) details.rocksUncovered++;
+        else if (cell.terrain === TERRAIN.ROCK) details.rocksUncovered++;
+        else if (cell.terrain === TERRAIN.EMPTY) details.emptyUncovered++;
       }
     }
   }
@@ -36,8 +39,9 @@ export function calculateScore(grid, skippedCount) {
 
   const total =
     groupTotal +
-    details.treesUncovered -
-    details.rocksUncovered -
+    details.treesUncovered * 2 -
+    details.rocksUncovered * 2 -
+    details.emptyUncovered -
     details.skippedTiles * 2;
 
   return { total, details };

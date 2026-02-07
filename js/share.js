@@ -30,10 +30,13 @@ export function generateShareText(grid, score, puzzleNumber, boardVariant, skipp
     }
   }
   if (d.treesUncovered > 0) {
-    breakdown += `\u{1F332}+${d.treesUncovered} `;
+    breakdown += `\u{1F332}+${d.treesUncovered * 2} `;
   }
   if (d.rocksUncovered > 0) {
-    breakdown += `\u{1FAA8}-${d.rocksUncovered} `;
+    breakdown += `\u{1FAA8}-${d.rocksUncovered * 2} `;
+  }
+  if (d.emptyUncovered > 0) {
+    breakdown += `\u{1F7EB}-${d.emptyUncovered} `;
   }
   if (d.skippedTiles > 0) {
     breakdown += `\u{1F6AB}-${d.skippedTiles * 2}`;
