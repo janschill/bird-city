@@ -715,7 +715,7 @@ function showPostGamePanel(result) {
   document.getElementById('game-area').appendChild($panel);
 
   document.getElementById('btn-share-inline').addEventListener('click', async () => {
-    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant);
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });
@@ -809,7 +809,7 @@ function showGameOver(result) {
   openModal(html);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant);
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });
@@ -837,7 +837,7 @@ function showAlreadyCompleted() {
   `);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant);
+    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant, skippedCount);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });
