@@ -39,6 +39,7 @@ let pendingValid = false;
 // ===== DOM references =====
 const $grid = document.getElementById('grid');
 const $tilePreview = document.getElementById('tile-preview');
+const $tileSequence = document.getElementById('tile-sequence');
 const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
 const $btnRotate = document.getElementById('btn-rotate');
@@ -84,6 +85,7 @@ function startNewGame() {
   loadCurrentTile();
   renderGrid();
   renderTilePreview();
+  renderSequence();
   updateHUD();
 }
 
@@ -98,6 +100,7 @@ function restoreGame(saved) {
   loadCurrentTile();
   renderGrid();
   renderTilePreview();
+  renderSequence();
   updateHUD();
 }
 
@@ -178,6 +181,23 @@ function renderTilePreview() {
       }
       $tilePreview.appendChild($cell);
     }
+  }
+}
+
+function renderSequence() {
+  $tileSequence.innerHTML = '';
+  for (let i = 0; i < tileSequence.length; i++) {
+    const $dot = document.createElement('div');
+    $dot.className = 'seq-tile';
+    if (i < currentTileIndex) {
+      $dot.classList.add('seq-tile--done');
+    } else {
+      $dot.style.background = `var(--${tileSequence[i].type})`;
+      if (i === currentTileIndex) {
+        $dot.classList.add('seq-tile--current');
+      }
+    }
+    $tileSequence.appendChild($dot);
   }
 }
 
@@ -355,6 +375,7 @@ function advanceTile() {
   } else {
     loadCurrentTile();
     renderTilePreview();
+    renderSequence();
     updateHUD();
     updateGridPreview();
   }

@@ -258,6 +258,32 @@ html, body {
 
 .preview-cell--empty { background: transparent; }
 
+/* Tile sequence overview */
+#tile-sequence {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.seq-tile {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.seq-tile--current {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+.seq-tile--done {
+  background: var(--border-color) !important;
+}
+
 /* Controls: single horizontal row */
 #tile-controls {
   display: flex;
