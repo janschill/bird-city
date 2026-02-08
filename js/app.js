@@ -48,8 +48,7 @@ let lastPointerEvent = null;
 // ===== DOM references =====
 const $grid = document.getElementById('grid');
 const $tilePreview = document.getElementById('tile-preview');
-const $seqLeft = document.getElementById('seq-left');
-const $seqRight = document.getElementById('seq-right');
+const $seqBar = document.getElementById('seq-bar');
 const $scoreDisplay = document.getElementById('score-display');
 const $tileCounter = document.getElementById('tile-counter');
 const $tilePreviewArea = document.getElementById('tile-preview-area');
@@ -218,14 +217,11 @@ function renderTilePreview() {
 }
 
 function renderSequence() {
-  $seqLeft.innerHTML = '';
-  $seqRight.innerHTML = '';
+  $seqBar.innerHTML = '';
 
   // Sort by shape then color (hides sequence order)
   const tiles = tileSequence.map((t, i) => ({ ...t, idx: i }));
   tiles.sort((a, b) => a.shapeKey.localeCompare(b.shapeKey) || a.type.localeCompare(b.type));
-
-  const half = Math.ceil(tiles.length / 2);
 
   for (let i = 0; i < tiles.length; i++) {
     const tile = tiles[i];
@@ -252,7 +248,7 @@ function renderSequence() {
       }
     }
 
-    (i < half ? $seqLeft : $seqRight).appendChild($shape);
+    $seqBar.appendChild($shape);
   }
 }
 
@@ -701,8 +697,9 @@ function showPostGamePanel(result) {
   $panel.innerHTML = `
     <div class="score-breakdown">
       ${groupRows}
-      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees</span><span class="value positive">+${d.treesUncovered}</span></div>` : ''}
-      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Rocks</span><span class="value negative">-${d.rocksUncovered}</span></div>` : ''}
+      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees (${d.treesUncovered})</span><span class="value positive">+${d.treesUncovered * 2}</span></div>` : ''}
+      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Rocks (${d.rocksUncovered})</span><span class="value negative">-${d.rocksUncovered * 2}</span></div>` : ''}
+      ${d.emptyUncovered ? `<div class="score-row"><span class="label">Open fields (${d.emptyUncovered})</span><span class="value negative">-${d.emptyUncovered}</span></div>` : ''}
       ${d.skippedTiles ? `<div class="score-row"><span class="label">Skipped (${d.skippedTiles})</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
       <div class="score-row"><span class="label">Total</span><span class="value">${result.total}</span></div>
     </div>
@@ -797,8 +794,9 @@ function showGameOver(result) {
 
     <div class="score-breakdown">
       ${groupRows}
-      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees preserved</span><span class="value positive">+${d.treesUncovered}</span></div>` : ''}
-      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Uncovered rocks</span><span class="value negative">-${d.rocksUncovered}</span></div>` : ''}
+      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees preserved (${d.treesUncovered})</span><span class="value positive">+${d.treesUncovered * 2}</span></div>` : ''}
+      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Uncovered rocks (${d.rocksUncovered})</span><span class="value negative">-${d.rocksUncovered * 2}</span></div>` : ''}
+      ${d.emptyUncovered ? `<div class="score-row"><span class="label">Open fields (${d.emptyUncovered})</span><span class="value negative">-${d.emptyUncovered}</span></div>` : ''}
       ${d.skippedTiles ? `<div class="score-row"><span class="label">Skipped tiles (${d.skippedTiles})</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
       <div class="score-row"><span class="label">Total</span><span class="value">${result.total}</span></div>
     </div>
@@ -895,8 +893,9 @@ function showHelp() {
     <div class="help-section">
       <h3>Scoring</h3>
       <p>Your <strong>largest connected group</strong> of each color scores points equal to its size. Groups connect horizontally and vertically (not diagonally).<br>
-      \u{1F332} Trees left uncovered: +1 each<br>
-      \u{1FAA8} Rocks left uncovered: -1 each<br>
+      \u{1F332} Trees left uncovered: +2 each<br>
+      \u{1FAA8} Rocks left uncovered: -2 each<br>
+      Open fields (uncovered): -1 each<br>
       Skipped tiles: -2 each</p>
     </div>
   `);
