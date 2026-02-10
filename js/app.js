@@ -378,6 +378,21 @@ function bindEvents() {
   // Menu dropdown
   $btnMenu.addEventListener('click', toggleMenu);
   $btnHelpMenu.addEventListener('click', () => { closeMenu(); showHelp(); });
+
+  // Hard mode toggle in menu
+  const $menuToggleHard = document.getElementById('menu-toggle-hard');
+  $menuToggleHard.checked = hardMode;
+  $menuToggleHard.addEventListener('change', () => {
+    hardMode = $menuToggleHard.checked;
+    saveHardModePref(hardMode);
+    applyHardMode();
+    // Clear undo snapshot when switching to hard mode
+    if (hardMode) {
+      undoSnapshot = null;
+      $btnUndo.disabled = true;
+    }
+    saveProgress();
+  });
   document.addEventListener('click', (e) => {
     if (!$headerMenu.classList.contains('hidden') && !$btnMenu.contains(e.target) && !$headerMenu.contains(e.target)) {
       closeMenu();
@@ -753,6 +768,9 @@ function showPostGamePanel(result) {
 
 // ===== Menu =====
 function toggleMenu() {
+  // Sync hard mode toggle state before showing
+  const $menuToggleHard = document.getElementById('menu-toggle-hard');
+  if ($menuToggleHard) $menuToggleHard.checked = hardMode;
   $headerMenu.classList.toggle('hidden');
 }
 
