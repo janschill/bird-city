@@ -960,8 +960,7 @@ function showWelcomeScreen() {
 
   function startGame() {
     hardMode = $toggleHard.checked;
-    $welcome.classList.add('hidden');
-    $app.classList.remove('hidden');
+    $welcome.remove();
     init();
   }
 

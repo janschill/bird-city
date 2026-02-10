@@ -15,7 +15,7 @@
 </head>
 <body>
   <!-- Welcome screen (shown before game starts) -->
-  <div id="welcome-screen">
+  <div id="welcome-screen" style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:#fff;">
     <div class="welcome-inner">
       <h1 class="welcome-title">Bird City</h1>
       <p class="welcome-subtitle">A daily city-building puzzle</p>
@@ -37,7 +37,7 @@
     </div>
   </div>
 
-  <div id="app" class="hidden">
+  <div id="app">
     <!-- Header -->
     <header id="header">
       <button id="btn-stats" class="icon-btn" aria-label="Stats">

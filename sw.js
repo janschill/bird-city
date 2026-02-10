@@ -8,7 +8,7 @@
  *   - External requests: network-only (don't cache analytics, etc.).
  */
 
-const CACHE_NAME = 'bird-city-v4';
+const CACHE_NAME = 'bird-city-v5';
 
 const PRECACHE_URLS = [
   '/',
