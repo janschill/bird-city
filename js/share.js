@@ -11,10 +11,11 @@ const COLOR_EMOJI = {
   sage: '\u{1F7E9}',
 };
 
-export function generateShareText(grid, score, puzzleNumber, boardVariant, skippedCount) {
+export function generateShareText(grid, score, puzzleNumber, boardVariant, skippedCount, isHardMode) {
   const stars = getStars(score);
   const starStr = '\u2B50'.repeat(stars) + '\u2606'.repeat(5 - stars);
   const label = boardVariant > 1 ? ` (Extra #${boardVariant - 1})` : '';
+  const hardLabel = isHardMode ? ' \u{1F525}' : '';
 
   // Use the day number for display, not the internal offset puzzle number
   const dayNumber = puzzleNumber > 100000 ? puzzleNumber % 100000 : puzzleNumber;
@@ -43,7 +44,7 @@ export function generateShareText(grid, score, puzzleNumber, boardVariant, skipp
   }
   breakdown = breakdown.trimEnd();
 
-  return `Bird City #${dayNumber}${label} \u{1F3D9}\uFE0F\n${starStr} ${score}pts\n${breakdown}\nbird-city.janschill.de`;
+  return `Bird City #${dayNumber}${label}${hardLabel} \u{1F3D9}\uFE0F\n${starStr} ${score}pts\n${breakdown}\nbird-city.janschill.de`;
 }
 
 export async function copyToClipboard(text) {
