@@ -926,5 +926,59 @@ function showToast(message) {
   setTimeout(() => $toast.remove(), 2000);
 }
 
+// ===== Welcome Screen =====
+function showWelcomeScreen() {
+  const $welcome = document.getElementById('welcome-screen');
+  const $app = document.getElementById('app');
+  const $puzzleNum = document.getElementById('welcome-puzzle-number');
+  const $date = document.getElementById('welcome-date');
+  const $statsEl = document.getElementById('welcome-stats');
+
+  // Puzzle number and date
+  const dayNum = getDayNumber();
+  $puzzleNum.textContent = `Puzzle #${dayNum}`;
+
+  const today = new Date();
+  $date.textContent = today.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  // Show stats for returning players
+  const stats = loadStats();
+  if (stats.gamesPlayed > 0) {
+    $statsEl.classList.remove('hidden');
+    $statsEl.innerHTML = `
+      <div class="welcome-stat">
+        <div class="welcome-stat-value">${stats.gamesPlayed}</div>
+        <div class="welcome-stat-label">Played</div>
+      </div>
+      <div class="welcome-stat">
+        <div class="welcome-stat-value">${stats.currentStreak}</div>
+        <div class="welcome-stat-label">Streak</div>
+      </div>
+      <div class="welcome-stat">
+        <div class="welcome-stat-value">${stats.bestScore}</div>
+        <div class="welcome-stat-label">Best</div>
+      </div>
+    `;
+  }
+
+  document.getElementById('btn-play').addEventListener('click', () => {
+    $welcome.classList.add('hidden');
+    $app.classList.remove('hidden');
+    init();
+  });
+
+  document.getElementById('btn-how-to-play').addEventListener('click', () => {
+    $welcome.classList.add('hidden');
+    $app.classList.remove('hidden');
+    init();
+    showHelp();
+  });
+}
+
 // ===== Start =====
-init();
+showWelcomeScreen();
