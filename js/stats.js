@@ -4,6 +4,7 @@
 
 const STORAGE_KEY = 'birdcity_stats';
 const GAME_STATE_KEY = 'birdcity_game';
+const COMPLETED_KEY = 'birdcity_completed';
 
 function defaultStats() {
   return {
@@ -87,6 +88,26 @@ export function clearGameState() {
   try {
     localStorage.removeItem(GAME_STATE_KEY);
   } catch { /* ignore */ }
+}
+
+/**
+ * Save completed game board so it can be restored later.
+ */
+export function saveCompletedGame(puzzleNumber, grid, skippedCount) {
+  try {
+    localStorage.setItem(COMPLETED_KEY, JSON.stringify({ puzzleNumber, grid, skippedCount }));
+  } catch { /* ignore */ }
+}
+
+export function loadCompletedGame(puzzleNumber) {
+  try {
+    const raw = localStorage.getItem(COMPLETED_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.puzzleNumber === puzzleNumber) return data;
+    }
+  } catch { /* ignore */ }
+  return null;
 }
 
 /**

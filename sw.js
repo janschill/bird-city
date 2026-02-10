@@ -1,12 +1,12 @@
 /**
- * Bird City -- Service Worker (network-first with pre-cache).
+ * Bird City -- Service Worker (cache-first / stale-while-revalidate).
  *
- * Pre-caches all game assets on install so the game works offline
- * immediately. Uses network-first fetch so deploys show up on reload.
- * Falls back to cache when offline.
+ * Pre-caches all game assets on install. Serves from cache immediately
+ * for instant offline loading. Updates the cache in the background so
+ * new deploys arrive on the next page load without blocking the current one.
  */
 
-const CACHE_NAME = 'bird-city-v2';
+const CACHE_NAME = 'bird-city-v3';
 
 const PRECACHE_URLS = [
   '/',
@@ -49,16 +49,20 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() =>
-        caches.match(event.request).then((cached) => cached || caches.match('/'))
-      )
+    caches.match(event.request).then((cached) => {
+      // Background update: fetch from network and refresh cache
+      const networkUpdate = fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+          }
+          return response;
+        })
+        .catch(() => null);
+
+      // Serve from cache immediately if available
+      // Otherwise fall back to network, then to cached root page
+      return cached || networkUpdate.then((resp) => resp || caches.match('/'));
+    })
   );
 });

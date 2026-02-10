@@ -7,7 +7,7 @@ import { COLORS, rotateShape, shapeBounds, getShape } from './tiles.js';
 import { calculateScore, getStars, runningScore } from './scoring.js';
 import { getPuzzleNumber, getDayNumber, getBoardVariant, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
-import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday } from './stats.js';
+import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday, saveCompletedGame, loadCompletedGame } from './stats.js';
 
 // ===== Emoji maps =====
 const TERRAIN_EMOJI = {
@@ -77,10 +77,7 @@ function init() {
   bindEvents();
 
   if (hasCompletedToday(puzzleNumber)) {
-    startNewGame();
-    gameOver = true;
-    document.getElementById('tile-panel').classList.add('hidden');
-    showAlreadyCompleted();
+    restoreCompletedView();
     return;
   }
 
@@ -126,6 +123,35 @@ function restoreGame(saved) {
   renderTilePreview();
   renderSequence();
   updateHUD();
+}
+
+function restoreCompletedView() {
+  const completed = loadCompletedGame(puzzleNumber);
+  if (completed) {
+    grid = completed.grid;
+    skippedCount = completed.skippedCount;
+  } else {
+    // Fallback for games completed before this feature
+    const gridRNG = createGridRNG(puzzleNumber);
+    grid = createGrid(gridRNG);
+    skippedCount = 0;
+  }
+  tileSequence = generateTileSequence(puzzleNumber);
+  currentTileIndex = tileSequence.length;
+  gameOver = true;
+  undoStack = [];
+
+  renderGrid();
+  updateHUD();
+  document.getElementById('tile-panel').classList.add('hidden');
+
+  // Show post-game actions if we have the completed board
+  if (completed) {
+    const result = calculateScore(grid, skippedCount);
+    showPostGamePanel(result);
+  }
+
+  showAlreadyCompleted();
 }
 
 function loadCurrentTile() {
@@ -660,6 +686,7 @@ function saveProgress() {
 
 function endGame() {
   gameOver = true;
+  saveCompletedGame(puzzleNumber, grid, skippedCount);
   clearGameState();
 
   const result = calculateScore(grid, skippedCount);
@@ -687,22 +714,9 @@ function showPostGamePanel(result) {
   const existing = document.getElementById('post-game-panel');
   if (existing) existing.remove();
 
-  const d = result.details;
-  const groupRows = COLORS.map(c =>
-    `<div class="score-row"><span class="label"><span class="legend-swatch" style="background:var(--${c});display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;margin-right:4px"></span>${COLOR_NAMES[c]}</span><span class="value positive">+${d.groups[c]}</span></div>`
-  ).join('');
-
   const $panel = document.createElement('div');
   $panel.id = 'post-game-panel';
   $panel.innerHTML = `
-    <div class="score-breakdown">
-      ${groupRows}
-      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees (${d.treesUncovered})</span><span class="value positive">+${d.treesUncovered * 2}</span></div>` : ''}
-      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Rocks (${d.rocksUncovered})</span><span class="value negative">-${d.rocksUncovered * 2}</span></div>` : ''}
-      ${d.emptyUncovered ? `<div class="score-row"><span class="label">Open fields (${d.emptyUncovered})</span><span class="value negative">-${d.emptyUncovered}</span></div>` : ''}
-      ${d.skippedTiles ? `<div class="score-row"><span class="label">Skipped (${d.skippedTiles})</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
-      <div class="score-row"><span class="label">Total</span><span class="value">${result.total}</span></div>
-    </div>
     <div class="post-game-actions">
       <button class="btn-share" id="btn-share-inline">Share</button>
       <button class="btn-share" id="btn-details-inline" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);">Details</button>
