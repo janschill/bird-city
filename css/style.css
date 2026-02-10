@@ -133,6 +133,34 @@ html, body {
   color: var(--accent);
 }
 
+.menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.toggle-switch--small {
+  width: 36px;
+  height: 22px;
+  border-radius: 11px;
+}
+
+.toggle-switch--small::after {
+  width: 16px;
+  height: 16px;
+}
+
 /* ===== Game Area ===== */
 #game-area {
   flex: 1;
