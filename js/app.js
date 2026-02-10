@@ -36,9 +36,21 @@ let skippedCount;
 let gameOver;
 let pendingAnchor = null;
 let pendingValid = false;
+let hardMode = false;
 
 // Undo (single-step only -- prevents peeking at tile order)
 let undoSnapshot = null;
+
+// ===== Hard mode persistence =====
+const HARD_MODE_KEY = 'birdcity_hardmode';
+
+function loadHardModePref() {
+  try { return localStorage.getItem(HARD_MODE_KEY) === '1'; } catch { return false; }
+}
+
+function saveHardModePref(on) {
+  try { localStorage.setItem(HARD_MODE_KEY, on ? '1' : '0'); } catch { /* ignore */ }
+}
 
 // Drag state
 let dragState = null; // { pointerId, startX, startY, dragging, source, $ghost }
@@ -87,6 +99,10 @@ function init() {
   }
 }
 
+function applyHardMode() {
+  document.getElementById('app').classList.toggle('hard-mode', hardMode);
+}
+
 function startNewGame() {
   const gridRNG = createGridRNG(puzzleNumber);
   grid = createGrid(gridRNG);
@@ -96,6 +112,7 @@ function startNewGame() {
   gameOver = false;
   undoSnapshot = null;
   $btnUndo.disabled = true;
+  applyHardMode();
   clearPending();
   showTilePanel();
 
@@ -111,9 +128,11 @@ function restoreGame(saved) {
   tileSequence = generateTileSequence(puzzleNumber);
   currentTileIndex = saved.currentTileIndex;
   skippedCount = saved.skippedCount;
+  hardMode = saved.hardMode || false;
   gameOver = false;
   undoSnapshot = null;
   $btnUndo.disabled = true;
+  applyHardMode();
   clearPending();
 
   loadCurrentTile();
@@ -590,7 +609,7 @@ function onPlace() {
 }
 
 function onSkip() {
-  if (gameOver) return;
+  if (gameOver || hardMode) return;
   pushUndo();
   skippedCount++;
   clearPending();
@@ -600,8 +619,8 @@ function onSkip() {
 function onKeyDown(e) {
   if (gameOver) return;
   if (e.key === 'r' || e.key === 'R') onRotate();
-  if (e.key === 's' || e.key === 'S') onSkip();
-  if (e.key === 'u' || e.key === 'U' || (e.key === 'z' && (e.ctrlKey || e.metaKey))) { e.preventDefault(); onUndo(); }
+  if (!hardMode && (e.key === 's' || e.key === 'S')) onSkip();
+  if (!hardMode && (e.key === 'u' || e.key === 'U' || (e.key === 'z' && (e.ctrlKey || e.metaKey)))) { e.preventDefault(); onUndo(); }
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlace(); }
 }
 
@@ -620,7 +639,7 @@ function pushUndo() {
 }
 
 function onUndo() {
-  if (gameOver || !undoSnapshot) return;
+  if (gameOver || hardMode || !undoSnapshot) return;
   grid = undoSnapshot.grid;
   currentTileIndex = undoSnapshot.currentTileIndex;
   skippedCount = undoSnapshot.skippedCount;
@@ -638,7 +657,7 @@ function onUndo() {
 
 // ===== Game Actions =====
 function doPlace(r, c) {
-  pushUndo();
+  if (!hardMode) pushUndo();
   const placed = placeTile(grid, currentShape, r, c, currentType);
 
   for (const [pr, pc] of placed) {
@@ -676,6 +695,7 @@ function saveProgress() {
     grid,
     currentTileIndex: currentTileIndex + 1,
     skippedCount,
+    hardMode,
   });
 }
 
@@ -721,7 +741,7 @@ function showPostGamePanel(result) {
   document.getElementById('game-area').appendChild($panel);
 
   document.getElementById('btn-share-inline').addEventListener('click', async () => {
-    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount);
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });
@@ -758,8 +778,11 @@ function showGameOver(result) {
     `<div class="score-row"><span class="label"><span class="legend-swatch" style="background:var(--${c});display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:middle;margin-right:4px"></span>${COLOR_NAMES[c]} group</span><span class="value positive">+${d.groups[c]}</span></div>`
   ).join('');
 
+  const hardBadge = hardMode ? '<div style="text-align:center;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;">\u{1F525} Hard Mode</span></div>' : '';
+
   const html = `
     <div class="game-over-title">${displayPuzzleLabel()}</div>
+    ${hardBadge}
     <div class="game-over-score">${result.total}</div>
     <div class="game-over-stars">${'\u2B50'.repeat(stars)}${'\u2606'.repeat(5 - stars)}</div>
 
@@ -778,7 +801,7 @@ function showGameOver(result) {
   openModal(html);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount);
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });
@@ -806,7 +829,7 @@ function showAlreadyCompleted() {
   `);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant, skippedCount);
+    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant, skippedCount, hardMode);
     await copyToClipboard(text);
     showToast('Copied to clipboard!');
   });
@@ -853,6 +876,11 @@ function showHelp() {
     </div>
 
     <div class="help-section">
+      <h3>Hard Mode</h3>
+      <p>Toggle on the start screen. No undo, no skip &mdash; every tile must be placed. Share results show \u{1F525} to prove it.</p>
+    </div>
+
+    <div class="help-section">
       <h3>Colors</h3>
       <div class="building-legend">
         <div class="legend-item"><div class="legend-swatch" style="background:var(--rust)"></div><strong>Rust</strong></div>
@@ -890,6 +918,7 @@ function showWelcomeScreen() {
   const $puzzleNum = document.getElementById('welcome-puzzle-number');
   const $date = document.getElementById('welcome-date');
   const $statsEl = document.getElementById('welcome-stats');
+  const $toggleHard = document.getElementById('toggle-hard');
 
   // Puzzle number and date
   const dayNum = getDayNumber();
@@ -901,6 +930,12 @@ function showWelcomeScreen() {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+  });
+
+  // Hard mode toggle
+  $toggleHard.checked = loadHardModePref();
+  $toggleHard.addEventListener('change', () => {
+    saveHardModePref($toggleHard.checked);
   });
 
   // Show stats for returning players
@@ -923,16 +958,17 @@ function showWelcomeScreen() {
     `;
   }
 
-  document.getElementById('btn-play').addEventListener('click', () => {
+  function startGame() {
+    hardMode = $toggleHard.checked;
     $welcome.classList.add('hidden');
     $app.classList.remove('hidden');
     init();
-  });
+  }
+
+  document.getElementById('btn-play').addEventListener('click', startGame);
 
   document.getElementById('btn-how-to-play').addEventListener('click', () => {
-    $welcome.classList.add('hidden');
-    $app.classList.remove('hidden');
-    init();
+    startGame();
     showHelp();
   });
 }
