@@ -1,12 +1,14 @@
 /**
- * Bird City -- Service Worker (cache-first / stale-while-revalidate).
+ * Bird City -- Service Worker.
  *
- * Pre-caches all game assets on install. Serves from cache immediately
- * for instant offline loading. Updates the cache in the background so
- * new deploys arrive on the next page load without blocking the current one.
+ * Strategies:
+ *   - Navigation (HTML): network-first so deploys land immediately.
+ *   - Same-origin assets (JS/CSS/images): stale-while-revalidate for
+ *     instant offline loading with background refresh.
+ *   - External requests: network-only (don't cache analytics, etc.).
  */
 
-const CACHE_NAME = 'bird-city-v3';
+const CACHE_NAME = 'bird-city-v4';
 
 const PRECACHE_URLS = [
   '/',
@@ -48,9 +50,30 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+
+  // Don't cache external requests (analytics, CDNs, etc.)
+  if (url.origin !== self.location.origin) return;
+
+  // Navigation (HTML): network-first so updates land on next visit
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Same-origin assets: stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      // Background update: fetch from network and refresh cache
       const networkUpdate = fetch(event.request)
         .then((response) => {
           if (response.ok) {
@@ -60,8 +83,6 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => null);
 
-      // Serve from cache immediately if available
-      // Otherwise fall back to network, then to cached root page
       return cached || networkUpdate.then((resp) => resp || caches.match('/'));
     })
   );

@@ -37,8 +37,8 @@ let gameOver;
 let pendingAnchor = null;
 let pendingValid = false;
 
-// Undo stack
-let undoStack = [];
+// Undo (single-step only -- prevents peeking at tile order)
+let undoSnapshot = null;
 
 // Drag state
 let dragState = null; // { pointerId, startX, startY, dragging, source, $ghost }
@@ -59,8 +59,6 @@ const $btnStats = document.getElementById('btn-stats');
 const $btnMenu = document.getElementById('btn-menu');
 const $headerMenu = document.getElementById('header-menu');
 const $btnHelpMenu = document.getElementById('btn-help-menu');
-const $btnEndMenu = document.getElementById('btn-end-menu');
-const $btnRestartMenu = document.getElementById('btn-restart-menu');
 const $modalOverlay = document.getElementById('modal-overlay');
 const $modal = document.getElementById('modal');
 const $modalContent = document.getElementById('modal-content');
@@ -96,7 +94,7 @@ function startNewGame() {
   currentTileIndex = 0;
   skippedCount = 0;
   gameOver = false;
-  undoStack = [];
+  undoSnapshot = null;
   $btnUndo.disabled = true;
   clearPending();
   showTilePanel();
@@ -114,7 +112,7 @@ function restoreGame(saved) {
   currentTileIndex = saved.currentTileIndex;
   skippedCount = saved.skippedCount;
   gameOver = false;
-  undoStack = [];
+  undoSnapshot = null;
   $btnUndo.disabled = true;
   clearPending();
 
@@ -139,7 +137,7 @@ function restoreCompletedView() {
   tileSequence = generateTileSequence(puzzleNumber);
   currentTileIndex = tileSequence.length;
   gameOver = true;
-  undoStack = [];
+  undoSnapshot = null;
 
   renderGrid();
   updateHUD();
@@ -361,8 +359,6 @@ function bindEvents() {
   // Menu dropdown
   $btnMenu.addEventListener('click', toggleMenu);
   $btnHelpMenu.addEventListener('click', () => { closeMenu(); showHelp(); });
-  $btnEndMenu.addEventListener('click', () => { closeMenu(); showEndConfirm(); });
-  $btnRestartMenu.addEventListener('click', () => { closeMenu(); showRestartConfirm(); });
   document.addEventListener('click', (e) => {
     if (!$headerMenu.classList.contains('hidden') && !$btnMenu.contains(e.target) && !$headerMenu.contains(e.target)) {
       closeMenu();
@@ -615,20 +611,21 @@ function cloneGrid(g) {
 }
 
 function pushUndo() {
-  undoStack.push({
+  undoSnapshot = {
     grid: cloneGrid(grid),
     currentTileIndex,
     skippedCount,
-  });
+  };
   $btnUndo.disabled = false;
 }
 
 function onUndo() {
-  if (gameOver || undoStack.length === 0) return;
-  const snapshot = undoStack.pop();
-  grid = snapshot.grid;
-  currentTileIndex = snapshot.currentTileIndex;
-  skippedCount = snapshot.skippedCount;
+  if (gameOver || !undoSnapshot) return;
+  grid = undoSnapshot.grid;
+  currentTileIndex = undoSnapshot.currentTileIndex;
+  skippedCount = undoSnapshot.skippedCount;
+  undoSnapshot = null;
+  $btnUndo.disabled = true;
   clearPending();
 
   loadCurrentTile();
@@ -636,8 +633,6 @@ function onUndo() {
   renderTilePreview();
   renderSequence();
   updateHUD();
-
-  $btnUndo.disabled = undoStack.length === 0;
   saveProgress();
 }
 
@@ -743,44 +738,6 @@ function toggleMenu() {
 
 function closeMenu() {
   $headerMenu.classList.add('hidden');
-}
-
-function showEndConfirm() {
-  if (gameOver) return;
-  const remaining = tileSequence.length - currentTileIndex;
-
-  openModal(`
-    <h2>End Game?</h2>
-    <p>${remaining} tile${remaining === 1 ? '' : 's'} remaining. Remaining tiles won't count against you.</p>
-    <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn-share" id="btn-cancel-end" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);flex:1;">Keep Playing</button>
-      <button class="btn-share" id="btn-confirm-end" style="flex:1;">End Game</button>
-    </div>
-  `);
-
-  document.getElementById('btn-cancel-end').addEventListener('click', closeModal);
-  document.getElementById('btn-confirm-end').addEventListener('click', () => {
-    closeModal();
-    endGame();
-  });
-}
-
-function showRestartConfirm() {
-  openModal(`
-    <h2>Restart Puzzle?</h2>
-    <p>Your current progress will be lost.</p>
-    <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn-share" id="btn-cancel-restart" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);flex:1;">Cancel</button>
-      <button class="btn-share" id="btn-confirm-restart" style="background:var(--accent);flex:1;">Restart</button>
-    </div>
-  `);
-
-  document.getElementById('btn-cancel-restart').addEventListener('click', closeModal);
-  document.getElementById('btn-confirm-restart').addEventListener('click', () => {
-    closeModal();
-    clearGameState();
-    startNewGame();
-  });
 }
 
 // ===== Modals =====
@@ -892,7 +849,7 @@ function showHelp() {
       <strong>Tap the preview</strong> or press <strong>R</strong> to rotate.<br>
       Press <strong>Place</strong> to confirm.<br>
       <strong>Skip</strong> (S) to discard a tile (-2 pts).<br>
-      <strong>Undo</strong> (U / Ctrl+Z) to take back a move.</p>
+      <strong>Undo</strong> (U / Ctrl+Z) to take back your last move (once).</p>
     </div>
 
     <div class="help-section">
@@ -926,5 +883,59 @@ function showToast(message) {
   setTimeout(() => $toast.remove(), 2000);
 }
 
+// ===== Welcome Screen =====
+function showWelcomeScreen() {
+  const $welcome = document.getElementById('welcome-screen');
+  const $app = document.getElementById('app');
+  const $puzzleNum = document.getElementById('welcome-puzzle-number');
+  const $date = document.getElementById('welcome-date');
+  const $statsEl = document.getElementById('welcome-stats');
+
+  // Puzzle number and date
+  const dayNum = getDayNumber();
+  $puzzleNum.textContent = `Puzzle #${dayNum}`;
+
+  const today = new Date();
+  $date.textContent = today.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  // Show stats for returning players
+  const stats = loadStats();
+  if (stats.gamesPlayed > 0) {
+    $statsEl.classList.remove('hidden');
+    $statsEl.innerHTML = `
+      <div class="welcome-stat">
+        <div class="welcome-stat-value">${stats.gamesPlayed}</div>
+        <div class="welcome-stat-label">Played</div>
+      </div>
+      <div class="welcome-stat">
+        <div class="welcome-stat-value">${stats.currentStreak}</div>
+        <div class="welcome-stat-label">Streak</div>
+      </div>
+      <div class="welcome-stat">
+        <div class="welcome-stat-value">${stats.bestScore}</div>
+        <div class="welcome-stat-label">Best</div>
+      </div>
+    `;
+  }
+
+  document.getElementById('btn-play').addEventListener('click', () => {
+    $welcome.classList.add('hidden');
+    $app.classList.remove('hidden');
+    init();
+  });
+
+  document.getElementById('btn-how-to-play').addEventListener('click', () => {
+    $welcome.classList.add('hidden');
+    $app.classList.remove('hidden');
+    init();
+    showHelp();
+  });
+}
+
 // ===== Start =====
-init();
+showWelcomeScreen();

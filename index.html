@@ -14,7 +14,22 @@
   <script defer data-domain="bird-city.janschill.de" src="https://nsa.janschill.de/js/script.js"></script>
 </head>
 <body>
-  <div id="app">
+  <!-- Welcome screen (shown before game starts) -->
+  <div id="welcome-screen">
+    <div class="welcome-inner">
+      <h1 class="welcome-title">Bird City</h1>
+      <p class="welcome-subtitle">A daily city-building puzzle</p>
+      <div class="welcome-info">
+        <div class="welcome-puzzle-number" id="welcome-puzzle-number"></div>
+        <div class="welcome-date" id="welcome-date"></div>
+      </div>
+      <div class="welcome-stats hidden" id="welcome-stats"></div>
+      <button class="welcome-play-btn" id="btn-play">Play</button>
+      <button class="welcome-how-btn" id="btn-how-to-play">How to Play</button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
     <!-- Header -->
     <header id="header">
       <button id="btn-stats" class="icon-btn" aria-label="Stats">
@@ -31,8 +46,6 @@
         </button>
         <div id="header-menu" class="header-menu hidden">
           <button id="btn-help-menu" class="menu-item">How to Play</button>
-          <button id="btn-end-menu" class="menu-item">End Game</button>
-          <button id="btn-restart-menu" class="menu-item menu-item--danger">Restart Puzzle</button>
         </div>
       </div>
     </header>

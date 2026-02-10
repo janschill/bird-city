@@ -58,6 +58,10 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+#app.hidden {
+  display: none;
+}
+
 /* ===== Header ===== */
 #header {
   display: flex;
@@ -645,4 +649,200 @@ html, body {
   font-weight: 600;
   z-index: 200;
   animation: fade-in 0.15s ease-out;
+}
+
+/* ===== Welcome Screen ===== */
+#welcome-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  height: 100dvh;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+#welcome-screen.hidden {
+  display: none;
+}
+
+.welcome-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+.welcome-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.welcome-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.welcome-info {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.welcome-puzzle-number {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.welcome-date {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.welcome-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  padding: 16px 0;
+  margin-bottom: 24px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.welcome-stats.hidden {
+  display: none;
+}
+
+.welcome-stat {
+  text-align: center;
+}
+
+.welcome-stat-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.welcome-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.welcome-play-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--sage);
+  color: white;
+  border: none;
+  border-radius: 100px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: opacity 0.15s;
+  margin-bottom: 12px;
+}
+
+.welcome-play-btn:active {
+  opacity: 0.8;
+}
+
+.welcome-how-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ===== Desktop Enhancements ===== */
+@media (min-width: 600px) and (min-height: 500px) {
+  :root {
+    /* Cap cell size so the grid doesn't get absurdly large on big screens */
+    --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 280px) / 12), 48px);
+  }
+
+  @supports (height: 1dvh) {
+    :root {
+      --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 250px) / 12), 48px);
+    }
+  }
+
+  html, body {
+    background: var(--bg-surface);
+  }
+
+  #app {
+    background: var(--bg);
+    border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    margin-top: 24px;
+    margin-bottom: 24px;
+    height: auto;
+    min-height: min(calc(100vh - 48px), 800px);
+    max-height: calc(100vh - 48px);
+  }
+
+  @supports (height: 1dvh) {
+    #app {
+      min-height: min(calc(100dvh - 48px), 800px);
+      max-height: calc(100dvh - 48px);
+    }
+  }
+
+  #header {
+    border-radius: 16px 16px 0 0;
+  }
+
+  #welcome-screen {
+    background: var(--bg);
+    border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    margin-top: 24px;
+    margin-bottom: 24px;
+    height: auto;
+    min-height: 500px;
+    max-height: calc(100vh - 48px);
+  }
+
+  /* Hover states for desktop */
+  .control-btn:not(:disabled):hover {
+    filter: brightness(0.95);
+  }
+
+  .place-btn:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
+
+  .btn-share:hover {
+    opacity: 0.9;
+  }
+
+  .menu-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .welcome-play-btn:hover {
+    opacity: 0.9;
+  }
+
+  .welcome-how-btn:hover {
+    color: var(--text);
+  }
+
+  .icon-btn:hover {
+    color: var(--text);
+    background: rgba(0, 0, 0, 0.06);
+  }
 }
