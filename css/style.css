@@ -58,6 +58,10 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+#app.hidden {
+  display: none;
+}
+
 /* ===== Header ===== */
 #header {
   display: flex;
@@ -760,4 +764,85 @@ html, body {
   padding: 8px;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* ===== Desktop Enhancements ===== */
+@media (min-width: 600px) and (min-height: 500px) {
+  :root {
+    /* Cap cell size so the grid doesn't get absurdly large on big screens */
+    --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 280px) / 12), 48px);
+  }
+
+  @supports (height: 1dvh) {
+    :root {
+      --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 250px) / 12), 48px);
+    }
+  }
+
+  html, body {
+    background: var(--bg-surface);
+  }
+
+  #app {
+    background: var(--bg);
+    border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    margin-top: 24px;
+    margin-bottom: 24px;
+    height: auto;
+    min-height: min(calc(100vh - 48px), 800px);
+    max-height: calc(100vh - 48px);
+  }
+
+  @supports (height: 1dvh) {
+    #app {
+      min-height: min(calc(100dvh - 48px), 800px);
+      max-height: calc(100dvh - 48px);
+    }
+  }
+
+  #header {
+    border-radius: 16px 16px 0 0;
+  }
+
+  #welcome-screen {
+    background: var(--bg);
+    border-radius: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    margin-top: 24px;
+    margin-bottom: 24px;
+    height: auto;
+    min-height: 500px;
+    max-height: calc(100vh - 48px);
+  }
+
+  /* Hover states for desktop */
+  .control-btn:not(:disabled):hover {
+    filter: brightness(0.95);
+  }
+
+  .place-btn:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
+
+  .btn-share:hover {
+    opacity: 0.9;
+  }
+
+  .menu-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .welcome-play-btn:hover {
+    opacity: 0.9;
+  }
+
+  .welcome-how-btn:hover {
+    color: var(--text);
+  }
+
+  .icon-btn:hover {
+    color: var(--text);
+    background: rgba(0, 0, 0, 0.06);
+  }
 }
