@@ -8,7 +8,7 @@
  *   - External requests: network-only (don't cache analytics, etc.).
  */
 
-const CACHE_NAME = 'bird-city-v6';
+const CACHE_NAME = 'bird-city-v7';
 
 const PRECACHE_URLS = [
   '/',
@@ -25,6 +25,7 @@ const PRECACHE_URLS = [
   '/js/share.js',
   '/js/stats.js',
   '/js/tiles.js',
+  '/js/i18n.js',
 ];
 
 self.addEventListener('install', (event) => {
