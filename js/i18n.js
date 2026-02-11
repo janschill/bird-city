@@ -1,5 +1,5 @@
 /**
- * Internationalization module for Bird City / Spiel Statt Plan.
+ * Internationalization module for Bird City / Spiel Stadt Plan.
  *
  * Supports English (en) and German (de).
  * Auto-detects from navigator.language, with localStorage override.
@@ -97,7 +97,7 @@ const translations = {
 
   de: {
     // App name
-    appName: 'Spiel Statt Plan',
+    appName: 'Spiel Stadt Plan',
     subtitle: 'Ein t\u00e4gliches Stadtbau-R\u00e4tsel',
 
     // Welcome screen
@@ -130,8 +130,8 @@ const translations = {
     copiedToClipboard: 'In die Zwischenablage kopiert!',
 
     // Game over modal
-    puzzleLabel: 'Spiel Statt Plan #%d',
-    puzzleLabelExtra: 'Spiel Statt Plan #%d (Extra)',
+    puzzleLabel: 'Spiel Stadt Plan #%d',
+    puzzleLabelExtra: 'Spiel Stadt Plan #%d (Extra)',
     hardModeBadge: 'Schwerer Modus',
 
     // Already completed
@@ -176,7 +176,7 @@ const translations = {
     language: 'Sprache',
 
     // Share text
-    shareLine: 'Spiel Statt Plan #%d',
+    shareLine: 'Spiel Stadt Plan #%d',
 
     // Date locale
     dateLocale: 'de-DE',
