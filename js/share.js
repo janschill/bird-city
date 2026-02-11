@@ -1,9 +1,10 @@
 /**
- * Share text generation for Bird City.
+ * Share text generation for Bird City / Spiel Statt Plan.
  */
 
 import { COLORS } from './tiles.js';
 import { getStars, calculateScore } from './scoring.js';
+import { t } from './i18n.js';
 
 const COLOR_EMOJI = {
   rust: '\u{1F7E7}',
@@ -44,7 +45,8 @@ export function generateShareText(grid, score, puzzleNumber, boardVariant, skipp
   }
   breakdown = breakdown.trimEnd();
 
-  return `Bird City #${dayNumber}${label}${hardLabel} \u{1F3D9}\uFE0F\n${starStr} ${score}pts\n${breakdown}\nbird-city.janschill.de`;
+  const gameName = t('shareLine').replace('%d', dayNumber);
+  return `${gameName}${label}${hardLabel} \u{1F3D9}\uFE0F\n${starStr} ${score}pts\n${breakdown}\nbird-city.janschill.de`;
 }
 
 export async function copyToClipboard(text) {

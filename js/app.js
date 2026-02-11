@@ -8,6 +8,7 @@ import { calculateScore, getStars, runningScore } from './scoring.js';
 import { getPuzzleNumber, getDayNumber, getBoardVariant, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
 import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday, saveCompletedGame, loadCompletedGame } from './stats.js';
+import { initI18n, t, getLang, setLang, getAvailableLanguages } from './i18n.js';
 
 // ===== Emoji maps =====
 const TERRAIN_EMOJI = {
@@ -17,12 +18,10 @@ const TERRAIN_EMOJI = {
   river: '',
 };
 
-// Color display names
-const COLOR_NAMES = {
-  rust: 'Rust',
-  sand: 'Sand',
-  sage: 'Sage',
-};
+// Color display names (localized via i18n)
+function getColorName(color) {
+  return t(color);
+}
 
 // ===== State =====
 let puzzleNumber;
@@ -78,7 +77,8 @@ const $modalContent = document.getElementById('modal-content');
 // ===== Init =====
 function displayPuzzleLabel() {
   const day = getDayNumber();
-  return boardVariant > 1 ? `Bird City #${day} (Extra)` : `Bird City #${day}`;
+  const template = boardVariant > 1 ? t('puzzleLabelExtra') : t('puzzleLabel');
+  return template.replace('%d', day);
 }
 
 function init() {
@@ -297,10 +297,10 @@ function renderSequence() {
 
 function updateHUD() {
   const score = runningScore(grid, skippedCount);
-  $scoreDisplay.textContent = `Score: ${score}`;
+  $scoreDisplay.textContent = t('score').replace('%d', score);
   $tileCounter.textContent = currentTileIndex < tileSequence.length
-    ? `Tile ${currentTileIndex + 1} / ${tileSequence.length}`
-    : 'Done!';
+    ? t('tileCounter').replace('%d', currentTileIndex + 1).replace('%d', tileSequence.length)
+    : t('done');
 }
 
 function updateGridPreview() {
@@ -748,8 +748,8 @@ function showPostGamePanel(result) {
   $panel.id = 'post-game-panel';
   $panel.innerHTML = `
     <div class="post-game-actions">
-      <button class="btn-share" id="btn-share-inline">Share</button>
-      <button class="btn-share" id="btn-details-inline" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);">Details</button>
+      <button class="btn-share" id="btn-share-inline">${t('share')}</button>
+      <button class="btn-share" id="btn-details-inline" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);">${t('details')}</button>
     </div>
   `;
 
@@ -758,7 +758,7 @@ function showPostGamePanel(result) {
   document.getElementById('btn-share-inline').addEventListener('click', async () => {
     const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode);
     await copyToClipboard(text);
-    showToast('Copied to clipboard!');
+    showToast(t('copiedToClipboard'));
   });
 
   document.getElementById('btn-details-inline').addEventListener('click', () => {
@@ -793,10 +793,10 @@ function showGameOver(result) {
   const d = result.details;
 
   const groupRows = COLORS.map(c =>
-    `<div class="score-row"><span class="label"><span class="legend-swatch" style="background:var(--${c});display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:middle;margin-right:4px"></span>${COLOR_NAMES[c]} group</span><span class="value positive">+${d.groups[c]}</span></div>`
+    `<div class="score-row"><span class="label"><span class="legend-swatch" style="background:var(--${c});display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:middle;margin-right:4px"></span>${t('colorGroup').replace('%s', getColorName(c))}</span><span class="value positive">+${d.groups[c]}</span></div>`
   ).join('');
 
-  const hardBadge = hardMode ? '<div style="text-align:center;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;">\u{1F525} Hard Mode</span></div>' : '';
+  const hardBadge = hardMode ? `<div style="text-align:center;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;">\u{1F525} ${t('hardModeBadge')}</span></div>` : '';
 
   const html = `
     <div class="game-over-title">${displayPuzzleLabel()}</div>
@@ -806,14 +806,14 @@ function showGameOver(result) {
 
     <div class="score-breakdown">
       ${groupRows}
-      ${d.treesUncovered ? `<div class="score-row"><span class="label">\u{1F332} Trees preserved (${d.treesUncovered})</span><span class="value positive">+${d.treesUncovered * 2}</span></div>` : ''}
-      ${d.rocksUncovered ? `<div class="score-row"><span class="label">\u{1FAA8} Uncovered rocks (${d.rocksUncovered})</span><span class="value negative">-${d.rocksUncovered * 2}</span></div>` : ''}
-      ${d.emptyUncovered ? `<div class="score-row"><span class="label">Open fields (${d.emptyUncovered})</span><span class="value negative">-${d.emptyUncovered}</span></div>` : ''}
-      ${d.skippedTiles ? `<div class="score-row"><span class="label">Skipped tiles (${d.skippedTiles})</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
-      <div class="score-row"><span class="label">Total</span><span class="value">${result.total}</span></div>
+      ${d.treesUncovered ? `<div class="score-row"><span class="label">${t('treesPreserved').replace('%d', d.treesUncovered)}</span><span class="value positive">+${d.treesUncovered * 2}</span></div>` : ''}
+      ${d.rocksUncovered ? `<div class="score-row"><span class="label">${t('uncoveredRocks').replace('%d', d.rocksUncovered)}</span><span class="value negative">-${d.rocksUncovered * 2}</span></div>` : ''}
+      ${d.emptyUncovered ? `<div class="score-row"><span class="label">${t('openFields').replace('%d', d.emptyUncovered)}</span><span class="value negative">-${d.emptyUncovered}</span></div>` : ''}
+      ${d.skippedTiles ? `<div class="score-row"><span class="label">${t('skippedTiles').replace('%d', d.skippedTiles)}</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
+      <div class="score-row"><span class="label">${t('total')}</span><span class="value">${result.total}</span></div>
     </div>
 
-    <button class="btn-share" id="btn-share-result">Share Result</button>
+    <button class="btn-share" id="btn-share-result">${t('shareResult')}</button>
   `;
 
   openModal(html);
@@ -821,7 +821,7 @@ function showGameOver(result) {
   document.getElementById('btn-share-result').addEventListener('click', async () => {
     const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode);
     await copyToClipboard(text);
-    showToast('Copied to clipboard!');
+    showToast(t('copiedToClipboard'));
   });
 }
 
@@ -835,21 +835,23 @@ function showAlreadyCompleted() {
   const nextAlsoPlayed = stats.scores.some(s => s.puzzle === nextPuzzle);
   const extraBoardBtn = nextAlsoPlayed
     ? ''
-    : `<a href="?board=${nextVariant}" class="btn-share" style="display:block;text-align:center;margin-top:8px;text-decoration:none;">Play Extra Board</a>`;
+    : `<a href="?board=${nextVariant}" class="btn-share" style="display:block;text-align:center;margin-top:8px;text-decoration:none;">${t('playExtraBoard')}</a>`;
+
+  const completedMsg = boardVariant > 1 ? t('alreadyCompletedExtra') : t('alreadyCompletedMain');
 
   openModal(`
-    <div class="game-over-title">Already Played!</div>
-    <p style="text-align:center; margin: 16px 0;">You've already completed ${boardVariant > 1 ? 'this extra board' : "today's puzzle"}.</p>
+    <div class="game-over-title">${t('alreadyPlayed')}</div>
+    <p style="text-align:center; margin: 16px 0;">${completedMsg}</p>
     ${todayScore ? `<div class="game-over-score">${todayScore.score}</div><div class="game-over-stars">${'\u2B50'.repeat(getStars(todayScore.score))}</div>` : ''}
-    <p style="text-align:center; color: var(--text-muted);">Come back tomorrow for a new puzzle!</p>
-    <button class="btn-share" id="btn-share-result" style="margin-top: 16px;">Share Result</button>
+    <p style="text-align:center; color: var(--text-muted);">${t('comeBackTomorrow')}</p>
+    <button class="btn-share" id="btn-share-result" style="margin-top: 16px;">${t('shareResult')}</button>
     ${extraBoardBtn}
   `);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
     const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant, skippedCount, hardMode);
     await copyToClipboard(text);
-    showToast('Copied to clipboard!');
+    showToast(t('copiedToClipboard'));
   });
 }
 
@@ -858,62 +860,54 @@ function showStats() {
   const avg = stats.gamesPlayed > 0 ? Math.round(stats.totalScore / stats.gamesPlayed) : 0;
 
   openModal(`
-    <h2>Statistics</h2>
+    <h2>${t('statistics')}</h2>
     <div class="stats-grid">
-      <div class="stat-box"><div class="stat-value">${stats.gamesPlayed}</div><div class="stat-label">Played</div></div>
-      <div class="stat-box"><div class="stat-value">${stats.currentStreak}</div><div class="stat-label">Streak</div></div>
-      <div class="stat-box"><div class="stat-value">${stats.maxStreak}</div><div class="stat-label">Max Streak</div></div>
-      <div class="stat-box"><div class="stat-value">${stats.bestScore}</div><div class="stat-label">Best</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.gamesPlayed}</div><div class="stat-label">${t('played')}</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.currentStreak}</div><div class="stat-label">${t('streak')}</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.maxStreak}</div><div class="stat-label">${t('maxStreak')}</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.bestScore}</div><div class="stat-label">${t('best')}</div></div>
     </div>
     <div class="score-breakdown">
-      <div class="score-row"><span class="label">Average score</span><span class="value">${avg}</span></div>
-      <div class="score-row"><span class="label">Games played</span><span class="value">${stats.gamesPlayed}</span></div>
+      <div class="score-row"><span class="label">${t('averageScore')}</span><span class="value">${avg}</span></div>
+      <div class="score-row"><span class="label">${t('gamesPlayed')}</span><span class="value">${stats.gamesPlayed}</span></div>
     </div>
   `);
 }
 
 function showHelp() {
   openModal(`
-    <h2>How to Play</h2>
+    <h2>${t('helpTitle')}</h2>
     <div class="help-section">
-      <p>Build your city by placing colored tiles on the grid. Each day everyone gets the same tiles in the same order.</p>
+      <p>${t('helpIntro')}</p>
     </div>
 
     <div class="help-section">
-      <h3>Placement</h3>
-      <p>Tiles must be placed <strong>next to the river</strong> or <strong>next to existing tiles</strong>. You grow your city outward from the river.</p>
+      <h3>${t('helpPlacementTitle')}</h3>
+      <p>${t('helpPlacement')}</p>
     </div>
 
     <div class="help-section">
-      <h3>Controls</h3>
-      <p><strong>Tap the grid</strong> or <strong>drag from the preview</strong> to position a tile.<br>
-      <strong>Tap the preview</strong> or press <strong>R</strong> to rotate.<br>
-      Press <strong>Place</strong> to confirm.<br>
-      <strong>Skip</strong> (S) to discard a tile (-2 pts).<br>
-      <strong>Undo</strong> (U / Ctrl+Z) to take back your last move (once).</p>
+      <h3>${t('helpControlsTitle')}</h3>
+      <p>${t('helpControls')}</p>
     </div>
 
     <div class="help-section">
-      <h3>Hard Mode</h3>
-      <p>Toggle on the start screen. No undo, no skip &mdash; every tile must be placed. Share results show \u{1F525} to prove it.</p>
+      <h3>${t('helpHardModeTitle')}</h3>
+      <p>${t('helpHardMode')}</p>
     </div>
 
     <div class="help-section">
-      <h3>Colors</h3>
+      <h3>${t('helpColorsTitle')}</h3>
       <div class="building-legend">
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--rust)"></div><strong>Rust</strong></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--sand)"></div><strong>Sand</strong></div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--sage)"></div><strong>Sage</strong></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--rust)"></div><strong>${getColorName('rust')}</strong></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--sand)"></div><strong>${getColorName('sand')}</strong></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--sage)"></div><strong>${getColorName('sage')}</strong></div>
       </div>
     </div>
 
     <div class="help-section">
-      <h3>Scoring</h3>
-      <p>Your <strong>largest connected group</strong> of each color scores points equal to its size. Groups connect horizontally and vertically (not diagonally).<br>
-      \u{1F332} Trees left uncovered: +2 each<br>
-      \u{1FAA8} Rocks left uncovered: -2 each<br>
-      Open fields (uncovered): -1 each<br>
-      Skipped tiles: -2 each</p>
+      <h3>${t('helpScoringTitle')}</h3>
+      <p>${t('helpScoring')}</p>
     </div>
   `);
 }
@@ -940,10 +934,10 @@ function showWelcomeScreen() {
 
   // Puzzle number and date
   const dayNum = getDayNumber();
-  $puzzleNum.textContent = `Puzzle #${dayNum}`;
+  $puzzleNum.textContent = t('puzzleNumber').replace('%d', dayNum);
 
   const today = new Date();
-  $date.textContent = today.toLocaleDateString('en-US', {
+  $date.textContent = today.toLocaleDateString(t('dateLocale'), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -963,15 +957,15 @@ function showWelcomeScreen() {
     $statsEl.innerHTML = `
       <div class="welcome-stat">
         <div class="welcome-stat-value">${stats.gamesPlayed}</div>
-        <div class="welcome-stat-label">Played</div>
+        <div class="welcome-stat-label">${t('played')}</div>
       </div>
       <div class="welcome-stat">
         <div class="welcome-stat-value">${stats.currentStreak}</div>
-        <div class="welcome-stat-label">Streak</div>
+        <div class="welcome-stat-label">${t('streak')}</div>
       </div>
       <div class="welcome-stat">
         <div class="welcome-stat-value">${stats.bestScore}</div>
-        <div class="welcome-stat-label">Best</div>
+        <div class="welcome-stat-label">${t('best')}</div>
       </div>
     `;
   }
@@ -990,5 +984,46 @@ function showWelcomeScreen() {
   });
 }
 
+// ===== i18n =====
+
+/**
+ * Apply translations to all elements with data-i18n attributes,
+ * and update the page title.
+ */
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const val = t(key);
+    if (val !== key) el.textContent = val;
+  });
+  document.title = t('appName');
+}
+
+/**
+ * Build the language switcher buttons inside the hamburger menu.
+ */
+function initLangSwitcher() {
+  const $container = document.getElementById('lang-options');
+  if (!$container) return;
+
+  $container.innerHTML = '';
+  for (const [code, name] of getAvailableLanguages()) {
+    const $btn = document.createElement('button');
+    $btn.className = 'lang-btn' + (code === getLang() ? ' lang-btn--active' : '');
+    $btn.textContent = name;
+    $btn.addEventListener('click', () => {
+      if (code === getLang()) return;
+      setLang(code);
+      applyI18n();
+      initLangSwitcher();
+      closeMenu();
+    });
+    $container.appendChild($btn);
+  }
+}
+
 // ===== Start =====
+initI18n();
+applyI18n();
+initLangSwitcher();
 showWelcomeScreen();
