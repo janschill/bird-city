@@ -649,6 +649,7 @@ function pushUndo() {
     grid: cloneGrid(grid),
     currentTileIndex,
     skippedCount,
+    currentShape: currentShape.map(([r, c]) => [r, c]),
   };
   $btnUndo.disabled = false;
 }
@@ -658,11 +659,13 @@ function onUndo() {
   grid = undoSnapshot.grid;
   currentTileIndex = undoSnapshot.currentTileIndex;
   skippedCount = undoSnapshot.skippedCount;
+  const savedShape = undoSnapshot.currentShape;
   undoSnapshot = null;
   $btnUndo.disabled = true;
   clearPending();
 
   loadCurrentTile();
+  if (savedShape) currentShape = savedShape;
   renderGrid();
   renderTilePreview();
   renderSequence();
