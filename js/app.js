@@ -32,6 +32,7 @@ let currentTileIndex;
 let currentShape;
 let currentType;
 let skippedCount;
+let endedEarlyCount;
 let gameOver;
 let pendingAnchor = null;
 let pendingValid = false;
@@ -66,6 +67,7 @@ const $tilePreviewArea = document.getElementById('tile-preview-area');
 const $btnUndo = document.getElementById('btn-undo');
 const $btnPlace = document.getElementById('btn-place');
 const $btnSkip = document.getElementById('btn-skip');
+const $btnEndRound = document.getElementById('btn-end-round');
 const $btnStats = document.getElementById('btn-stats');
 const $btnMenu = document.getElementById('btn-menu');
 const $headerMenu = document.getElementById('header-menu');
@@ -109,6 +111,7 @@ function startNewGame() {
   tileSequence = generateTileSequence(puzzleNumber);
   currentTileIndex = 0;
   skippedCount = 0;
+  endedEarlyCount = 0;
   gameOver = false;
   undoSnapshot = null;
   $btnUndo.disabled = true;
@@ -128,6 +131,7 @@ function restoreGame(saved) {
   tileSequence = generateTileSequence(puzzleNumber);
   currentTileIndex = saved.currentTileIndex;
   skippedCount = saved.skippedCount;
+  endedEarlyCount = 0;
   hardMode = saved.hardMode || false;
   gameOver = false;
   undoSnapshot = null;
@@ -147,11 +151,13 @@ function restoreCompletedView() {
   if (completed) {
     grid = completed.grid;
     skippedCount = completed.skippedCount;
+    endedEarlyCount = completed.endedEarlyCount || 0;
   } else {
     // Fallback for games completed before this feature
     const gridRNG = createGridRNG(puzzleNumber);
     grid = createGrid(gridRNG);
     skippedCount = 0;
+    endedEarlyCount = 0;
   }
   tileSequence = generateTileSequence(puzzleNumber);
   currentTileIndex = tileSequence.length;
@@ -372,6 +378,7 @@ function bindEvents() {
   $btnUndo.addEventListener('click', onUndo);
   $btnPlace.addEventListener('click', onPlace);
   $btnSkip.addEventListener('click', onSkip);
+  $btnEndRound.addEventListener('click', onEndRound);
 
   $btnStats.addEventListener('click', showStats);
 
@@ -631,11 +638,38 @@ function onSkip() {
   advanceTile();
 }
 
+function onEndRound() {
+  if (gameOver) return;
+  const remaining = tileSequence.length - currentTileIndex;
+  if (remaining <= 0) return;
+
+  // Show confirmation modal
+  const html = `
+    <div class="game-over-title">${t('endRoundTitle')}</div>
+    <p style="text-align:center; margin: 16px 0;">${t('endRoundConfirm').replace('%d', remaining)}</p>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button id="btn-end-cancel" class="btn-share" style="background:var(--bg-surface);color:var(--text);border:1px solid var(--border-color);flex:1;">${t('endRoundCancel')}</button>
+      <button id="btn-end-confirm" class="btn-share" style="background:var(--accent);flex:1;">${t('endRoundConfirmBtn')}</button>
+    </div>
+  `;
+  openModal(html);
+
+  document.getElementById('btn-end-cancel').addEventListener('click', closeModal);
+  document.getElementById('btn-end-confirm').addEventListener('click', () => {
+    closeModal();
+    endedEarlyCount = remaining;
+    // Jump to end without counting remaining tiles as skipped
+    currentTileIndex = tileSequence.length;
+    endGame();
+  });
+}
+
 function onKeyDown(e) {
   if (gameOver) return;
   if (e.key === 'r' || e.key === 'R') onRotate();
   if (!hardMode && (e.key === 's' || e.key === 'S')) onSkip();
   if (!hardMode && (e.key === 'u' || e.key === 'U' || (e.key === 'z' && (e.ctrlKey || e.metaKey)))) { e.preventDefault(); onUndo(); }
+  if (e.key === 'e' || e.key === 'E') onEndRound();
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPlace(); }
 }
 
@@ -719,7 +753,7 @@ function saveProgress() {
 
 function endGame() {
   gameOver = true;
-  saveCompletedGame(puzzleNumber, grid, skippedCount);
+  saveCompletedGame(puzzleNumber, grid, skippedCount, endedEarlyCount);
   clearGameState();
 
   const result = calculateScore(grid, skippedCount);
@@ -759,7 +793,7 @@ function showPostGamePanel(result) {
   document.getElementById('game-area').appendChild($panel);
 
   document.getElementById('btn-share-inline').addEventListener('click', async () => {
-    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode);
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode, endedEarlyCount);
     await copyToClipboard(text);
     showToast(t('copiedToClipboard'));
   });
@@ -813,6 +847,7 @@ function showGameOver(result) {
       ${d.rocksUncovered ? `<div class="score-row"><span class="label">${t('uncoveredRocks').replace('%d', d.rocksUncovered)}</span><span class="value negative">-${d.rocksUncovered * 2}</span></div>` : ''}
       ${d.emptyUncovered ? `<div class="score-row"><span class="label">${t('openFields').replace('%d', d.emptyUncovered)}</span><span class="value negative">-${d.emptyUncovered}</span></div>` : ''}
       ${d.skippedTiles ? `<div class="score-row"><span class="label">${t('skippedTiles').replace('%d', d.skippedTiles)}</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
+      ${endedEarlyCount ? `<div class="score-row"><span class="label">${t('endedEarly').replace('%d', endedEarlyCount)}</span><span class="value" style="color:var(--text-muted);">&mdash;</span></div>` : ''}
       <div class="score-row"><span class="label">${t('total')}</span><span class="value">${result.total}</span></div>
     </div>
 
@@ -822,7 +857,7 @@ function showGameOver(result) {
   openModal(html);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode);
+    const text = generateShareText(grid, result.total, puzzleNumber, boardVariant, skippedCount, hardMode, endedEarlyCount);
     await copyToClipboard(text);
     showToast(t('copiedToClipboard'));
   });
@@ -852,7 +887,7 @@ function showAlreadyCompleted() {
   `);
 
   document.getElementById('btn-share-result').addEventListener('click', async () => {
-    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant, skippedCount, hardMode);
+    const text = generateShareText(grid, todayScore?.score || 0, puzzleNumber, boardVariant, skippedCount, hardMode, endedEarlyCount);
     await copyToClipboard(text);
     showToast(t('copiedToClipboard'));
   });

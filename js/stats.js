@@ -93,9 +93,9 @@ export function clearGameState() {
 /**
  * Save completed game board so it can be restored later.
  */
-export function saveCompletedGame(puzzleNumber, grid, skippedCount) {
+export function saveCompletedGame(puzzleNumber, grid, skippedCount, endedEarlyCount) {
   try {
-    localStorage.setItem(COMPLETED_KEY, JSON.stringify({ puzzleNumber, grid, skippedCount }));
+    localStorage.setItem(COMPLETED_KEY, JSON.stringify({ puzzleNumber, grid, skippedCount, endedEarlyCount: endedEarlyCount || 0 }));
   } catch { /* ignore */ }
 }
 

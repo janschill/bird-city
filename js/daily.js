@@ -3,8 +3,7 @@
  */
 
 import { SHAPE_KEYS, COLORS, getShape } from './tiles.js';
-
-const TILES_PER_GAME = 14;
+import { ROWS, COLS, TERRAIN, createGrid } from './grid.js';
 
 /**
  * Read the board variant from the URL (?board=2, etc). Default is 1.
@@ -53,20 +52,39 @@ export function createRNG(seed) {
 
 /**
  * Generate the daily tile sequence.
- * Each tile gets a random shape and random color.
+ *
+ * Uses a budget-based approach: count the buildable cells on the board,
+ * then generate random tiles until their total cell count covers ~90-100%
+ * of the buildable area. This ensures players always get enough tiles
+ * to achieve good coverage, while the random coverage ratio keeps it
+ * from being perfectly predictable.
  */
 export function generateTileSequence(puzzleNumber) {
   const rng = createRNG(puzzleNumber * 31337);
 
+  // Simulate the board to count buildable (non-river) cells
+  const gridRNG = createRNG(puzzleNumber * 7919 + 42);
+  const tempGrid = createGrid(gridRNG);
+  let buildable = 0;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (tempGrid[r][c].terrain !== TERRAIN.RIVER) buildable++;
+    }
+  }
+
+  // Target: cover 90-100% of buildable area (randomized per puzzle)
+  const coverageRatio = 0.90 + rng() * 0.10;
+  const targetCells = Math.round(buildable * coverageRatio);
+
   const tiles = [];
-  for (let i = 0; i < TILES_PER_GAME; i++) {
+  let totalCells = 0;
+
+  while (totalCells < targetCells && tiles.length < 25) {
     const shapeKey = SHAPE_KEYS[Math.floor(rng() * SHAPE_KEYS.length)];
     const color = COLORS[Math.floor(rng() * COLORS.length)];
-    tiles.push({
-      shapeKey,
-      shape: getShape(shapeKey),
-      type: color,
-    });
+    const shape = getShape(shapeKey);
+    tiles.push({ shapeKey, shape, type: color });
+    totalCells += shape.length;
   }
 
   return tiles;

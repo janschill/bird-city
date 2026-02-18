@@ -479,6 +479,25 @@ html, body {
   opacity: 0.6;
 }
 
+/* End Round button */
+.end-round-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  align-self: center;
+  transition: color 0.15s;
+}
+
+.end-round-btn:active {
+  color: var(--text);
+}
+
 /* ===== Post-Game Breakdown ===== */
 #post-game-panel {
   font-size: 12px;
@@ -989,6 +1008,10 @@ html, body {
 
   .lang-btn:hover:not(.lang-btn--active) {
     background: var(--bg-surface);
+    color: var(--text);
+  }
+
+  .end-round-btn:hover {
     color: var(--text);
   }
 }
