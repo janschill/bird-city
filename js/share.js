@@ -12,7 +12,7 @@ const COLOR_EMOJI = {
   sage: '\u{1F7E9}',
 };
 
-export function generateShareText(grid, score, puzzleNumber, boardVariant, skippedCount, isHardMode) {
+export function generateShareText(grid, score, puzzleNumber, boardVariant, skippedCount, isHardMode, endedEarlyCount) {
   const stars = getStars(score);
   const starStr = '\u2B50'.repeat(stars) + '\u2606'.repeat(5 - stars);
   const label = boardVariant > 1 ? ` (Extra #${boardVariant - 1})` : '';
@@ -41,7 +41,10 @@ export function generateShareText(grid, score, puzzleNumber, boardVariant, skipp
     breakdown += `\u{1F7EB}-${d.emptyUncovered} `;
   }
   if (d.skippedTiles > 0) {
-    breakdown += `\u{1F6AB}-${d.skippedTiles * 2}`;
+    breakdown += `\u{1F6AB}-${d.skippedTiles * 2} `;
+  }
+  if (endedEarlyCount > 0) {
+    breakdown += `\u{1F3C1}${endedEarlyCount}`;
   }
   breakdown = breakdown.trimEnd();
 

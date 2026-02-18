@@ -35,6 +35,7 @@ const translations = {
     undo: 'UNDO',
     place: 'PLACE',
     skip: 'SKIP',
+    endRound: 'End Round',
 
     // Post-game
     share: 'Share',
@@ -65,12 +66,18 @@ const translations = {
     helpPlacementTitle: 'Placement',
     helpPlacement: 'Tiles must be placed <strong>next to the river</strong> or <strong>next to existing tiles</strong>. You grow your city outward from the river.',
     helpControlsTitle: 'Controls',
-    helpControls: '<strong>Tap the grid</strong> or <strong>drag from the preview</strong> to position a tile.<br><strong>Tap the preview</strong> or press <strong>R</strong> to rotate.<br>Press <strong>Place</strong> to confirm.<br><strong>Skip</strong> (S) to discard a tile (-2 pts).<br><strong>Undo</strong> (U / Ctrl+Z) to take back your last move (once).',
+    helpControls: '<strong>Tap the grid</strong> or <strong>drag from the preview</strong> to position a tile.<br><strong>Tap the preview</strong> or press <strong>R</strong> to rotate.<br>Press <strong>Place</strong> to confirm.<br><strong>Skip</strong> (S) to discard a tile (-2 pts).<br><strong>Undo</strong> (U / Ctrl+Z) to take back your last move (once).<br><strong>End Round</strong> (E) to stop early &mdash; remaining tiles won\u2019t cost skip penalties.',
     helpHardModeTitle: 'Hard Mode',
     helpHardMode: 'Toggle on the start screen. No undo, no skip &mdash; every tile must be placed. Share results show \u{1F525} to prove it.',
     helpColorsTitle: 'Colors',
     helpScoringTitle: 'Scoring',
     helpScoring: 'Your <strong>largest connected group</strong> of each color scores points equal to its size. Groups connect horizontally and vertically (not diagonally).<br>\u{1F332} Trees left uncovered: +2 each<br>\u{1FAA8} Rocks left uncovered: -2 each<br>Open fields (uncovered): -1 each<br>Skipped tiles: -2 each',
+
+    // End round
+    endRoundTitle: 'End Round?',
+    endRoundConfirm: 'End the round with %d tiles remaining? Unused tiles won\u2019t count as skipped.',
+    endRoundCancel: 'Cancel',
+    endRoundConfirmBtn: 'End Round',
 
     // Score breakdown
     colorGroup: '%s group',
@@ -78,6 +85,7 @@ const translations = {
     uncoveredRocks: '\u{1FAA8} Uncovered rocks (%d)',
     openFields: 'Open fields (%d)',
     skippedTiles: 'Skipped tiles (%d)',
+    endedEarly: 'Round ended early (%d unused)',
     total: 'Total',
 
     // Color names
@@ -122,6 +130,7 @@ const translations = {
     undo: 'ZUR\u00dcCK',
     place: 'SETZEN',
     skip: 'PASSEN',
+    endRound: 'Runde beenden',
 
     // Post-game
     share: 'Teilen',
@@ -152,12 +161,18 @@ const translations = {
     helpPlacementTitle: 'Platzierung',
     helpPlacement: 'Teile m\u00fcssen <strong>neben dem Fluss</strong> oder <strong>neben bestehenden Teilen</strong> platziert werden. Du baust deine Stadt vom Fluss aus nach au\u00dfen.',
     helpControlsTitle: 'Steuerung',
-    helpControls: '<strong>Tippe auf das Raster</strong> oder <strong>ziehe von der Vorschau</strong>, um ein Teil zu positionieren.<br><strong>Tippe auf die Vorschau</strong> oder dr\u00fccke <strong>R</strong> zum Drehen.<br>Dr\u00fccke <strong>Setzen</strong> zum Best\u00e4tigen.<br><strong>Passen</strong> (S) um ein Teil abzulegen (-2 Pkt).<br><strong>Zur\u00fcck</strong> (U / Strg+Z) um den letzten Zug r\u00fcckg\u00e4ngig zu machen (einmal).',
+    helpControls: '<strong>Tippe auf das Raster</strong> oder <strong>ziehe von der Vorschau</strong>, um ein Teil zu positionieren.<br><strong>Tippe auf die Vorschau</strong> oder dr\u00fccke <strong>R</strong> zum Drehen.<br>Dr\u00fccke <strong>Setzen</strong> zum Best\u00e4tigen.<br><strong>Passen</strong> (S) um ein Teil abzulegen (-2 Pkt).<br><strong>Zur\u00fcck</strong> (U / Strg+Z) um den letzten Zug r\u00fcckg\u00e4ngig zu machen (einmal).<br><strong>Runde beenden</strong> (E) um vorzeitig aufzuh\u00f6ren &mdash; verbleibende Teile kosten keine Strafpunkte.',
     helpHardModeTitle: 'Schwerer Modus',
     helpHardMode: 'Auf dem Startbildschirm umschalten. Kein Zur\u00fccknehmen, kein Passen &mdash; jedes Teil muss platziert werden. Geteilte Ergebnisse zeigen \u{1F525} als Beweis.',
     helpColorsTitle: 'Farben',
     helpScoringTitle: 'Wertung',
     helpScoring: 'Deine <strong>gr\u00f6\u00dfte zusammenh\u00e4ngende Gruppe</strong> jeder Farbe ergibt Punkte gleich ihrer Gr\u00f6\u00dfe. Gruppen verbinden sich horizontal und vertikal (nicht diagonal).<br>\u{1F332} Nicht bedeckte B\u00e4ume: +2 je<br>\u{1FAA8} Nicht bedeckte Felsen: -2 je<br>Offene Felder (unbedeckt): -1 je<br>\u00dcbersprungene Teile: -2 je',
+
+    // End round
+    endRoundTitle: 'Runde beenden?',
+    endRoundConfirm: 'Runde mit %d verbleibenden Teilen beenden? Unbenutzte Teile werden nicht als \u00fcbersprungen gez\u00e4hlt.',
+    endRoundCancel: 'Abbrechen',
+    endRoundConfirmBtn: 'Beenden',
 
     // Score breakdown
     colorGroup: '%s-Gruppe',
@@ -165,6 +180,7 @@ const translations = {
     uncoveredRocks: '\u{1FAA8} Unbedeckte Felsen (%d)',
     openFields: 'Offene Felder (%d)',
     skippedTiles: '\u00dcbersprungene Teile (%d)',
+    endedEarly: 'Vorzeitig beendet (%d unbenutzt)',
     total: 'Gesamt',
 
     // Color names
