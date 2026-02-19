@@ -4,7 +4,7 @@
 
 import { COLS, ROWS, createGrid, canPlace, placeTile } from './grid.js';
 import { COLORS, rotateShape, shapeBounds, getShape } from './tiles.js';
-import { calculateScore, getStars, runningScore } from './scoring.js';
+import { calculateScore, getStars } from './scoring.js';
 import { getPuzzleNumber, getDayNumber, getBoardVariant, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
 import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday, saveCompletedGame, loadCompletedGame } from './stats.js';
@@ -61,8 +61,6 @@ let lastPointerEvent = null;
 const $grid = document.getElementById('grid');
 const $tilePreview = document.getElementById('tile-preview');
 const $seqBar = document.getElementById('seq-bar');
-const $scoreDisplay = document.getElementById('score-display');
-const $tileCounter = document.getElementById('tile-counter');
 const $tilePreviewArea = document.getElementById('tile-preview-area');
 const $btnUndo = document.getElementById('btn-undo');
 const $btnPlace = document.getElementById('btn-place');
@@ -302,11 +300,9 @@ function renderSequence() {
 }
 
 function updateHUD() {
-  const score = runningScore(grid, skippedCount);
-  $scoreDisplay.textContent = t('score').replace('%d', score);
-  $tileCounter.textContent = currentTileIndex < tileSequence.length
-    ? t('tileCounter').replace('%d', currentTileIndex + 1).replace('%d', tileSequence.length)
-    : t('done');
+  // Score bar removed -- score is shown post-game and tile count
+  // is visible in the sequence bar. This function is kept as a
+  // no-op so call-sites don't need to change.
 }
 
 function updateGridPreview() {
