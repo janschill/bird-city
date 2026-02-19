@@ -28,12 +28,12 @@
   --grid-gap: 3px;
   --border-color: #d3d6da;
   --radius: 6px;
-  --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 280px) / 12));
+  --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 256px) / 12));
 }
 
 @supports (height: 1dvh) {
   :root {
-    --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 250px) / 12));
+    --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 226px) / 12));
   }
 }
 
@@ -220,23 +220,6 @@ html, body {
   padding: 4px 10px 8px;
   gap: 4px;
   overflow: hidden;
-}
-
-/* ===== Score Bar ===== */
-#score-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  padding: 2px 2px;
-}
-
-#score-display {
-  color: var(--text);
-  font-size: 15px;
 }
 
 /* ===== Grid ===== */
@@ -941,12 +924,12 @@ html, body {
 @media (min-width: 600px) and (min-height: 500px) {
   :root {
     /* Cap cell size so the grid doesn't get absurdly large on big screens */
-    --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 280px) / 12), 48px);
+    --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 256px) / 12), 48px);
   }
 
   @supports (height: 1dvh) {
     :root {
-      --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 250px) / 12), 48px);
+      --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 226px) / 12), 48px);
     }
   }
 
