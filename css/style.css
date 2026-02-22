@@ -832,6 +832,44 @@ html, body {
   text-underline-offset: 2px;
 }
 
+/* Username input on welcome screen */
+.welcome-username {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.welcome-username label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.welcome-username input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.welcome-username input:focus {
+  border-color: var(--sage);
+}
+
+.welcome-username input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 /* Hard mode toggle on welcome screen */
 .welcome-mode-toggle {
   display: flex;
@@ -918,6 +956,81 @@ html, body {
   color: var(--accent);
   margin-left: 6px;
   vertical-align: middle;
+}
+
+/* ===== Leaderboard ===== */
+.lb-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.lb-tab {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.lb-tab--active {
+  color: var(--text);
+  border-bottom-color: var(--sage);
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.lb-table tr {
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.lb-table tr:last-child {
+  border-bottom: none;
+}
+
+.lb-rank {
+  width: 32px;
+  padding: 10px 4px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-align: center;
+}
+
+.lb-name {
+  padding: 10px 8px;
+  font-weight: 500;
+}
+
+.lb-score {
+  padding: 10px 4px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-row--you {
+  background: rgba(122, 154, 88, 0.08);
+}
+
+.lb-row--you .lb-name {
+  font-weight: 700;
+}
+
+.lb-you {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 /* ===== Desktop Enhancements ===== */

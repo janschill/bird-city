@@ -8,7 +8,7 @@
  *   - External requests: network-only (don't cache analytics, etc.).
  */
 
-const CACHE_NAME = 'bird-city-v7';
+const CACHE_NAME = 'bird-city-v8';
 
 const PRECACHE_URLS = [
   '/',
@@ -21,6 +21,7 @@ const PRECACHE_URLS = [
   '/js/app.js',
   '/js/daily.js',
   '/js/grid.js',
+  '/js/leaderboard.js',
   '/js/scoring.js',
   '/js/share.js',
   '/js/stats.js',

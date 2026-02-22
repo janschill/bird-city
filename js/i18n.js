@@ -99,6 +99,15 @@ const translations = {
     // Share text
     shareLine: 'Bird City #%d',
 
+    // Leaderboard
+    yourName: 'Your name',
+    namePlaceholder: 'Pick a name for the leaderboard',
+    leaderboard: 'Leaderboard',
+    today: 'Today',
+    allTime: 'All Time',
+    noScoresYet: 'No scores yet',
+    you: '(you)',
+
     // Date locale
     dateLocale: 'en-US',
   },
@@ -193,6 +202,15 @@ const translations = {
 
     // Share text
     shareLine: 'Spiel Stadt Plan #%d',
+
+    // Leaderboard
+    yourName: 'Dein Name',
+    namePlaceholder: 'Wähle einen Namen',
+    leaderboard: 'Bestenliste',
+    today: 'Heute',
+    allTime: 'Gesamt',
+    noScoresYet: 'Noch keine Punkte',
+    you: '(du)',
 
     // Date locale
     dateLocale: 'de-DE',

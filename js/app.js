@@ -9,6 +9,7 @@ import { getPuzzleNumber, getDayNumber, getBoardVariant, generateTileSequence, c
 import { generateShareText, copyToClipboard } from './share.js';
 import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday, saveCompletedGame, loadCompletedGame } from './stats.js';
 import { initI18n, t, getLang, setLang, getAvailableLanguages } from './i18n.js';
+import { loadUsername, saveUsername, addScore, getScoresForPuzzle, getAllTimeBest } from './leaderboard.js';
 
 // ===== Emoji maps =====
 const TERRAIN_EMOJI = {
@@ -67,6 +68,7 @@ const $btnPlace = document.getElementById('btn-place');
 const $btnSkip = document.getElementById('btn-skip');
 const $btnEndRound = document.getElementById('btn-end-round');
 const $btnStats = document.getElementById('btn-stats');
+const $btnLeaderboard = document.getElementById('btn-leaderboard');
 const $btnMenu = document.getElementById('btn-menu');
 const $headerMenu = document.getElementById('header-menu');
 const $btnHelpMenu = document.getElementById('btn-help-menu');
@@ -377,6 +379,7 @@ function bindEvents() {
   $btnEndRound.addEventListener('click', onEndRound);
 
   $btnStats.addEventListener('click', showStats);
+  $btnLeaderboard.addEventListener('click', showLeaderboard);
 
   // Menu dropdown
   $btnMenu.addEventListener('click', toggleMenu);
@@ -755,6 +758,11 @@ function endGame() {
   const result = calculateScore(grid, skippedCount);
   recordGame(puzzleNumber, result.total);
 
+  const username = loadUsername();
+  if (username) {
+    addScore(username, result.total, puzzleNumber, hardMode);
+  }
+
   renderGrid();
   $tilePreview.innerHTML = '';
   updateHUD();
@@ -908,6 +916,56 @@ function showStats() {
   `);
 }
 
+function showLeaderboard() {
+  const username = loadUsername();
+
+  function renderTab(tab) {
+    const scores = tab === 'today'
+      ? getScoresForPuzzle(puzzleNumber)
+      : getAllTimeBest();
+
+    if (scores.length === 0) {
+      return `<p style="text-align:center;color:var(--text-muted);padding:24px 0;">${t('noScoresYet')}</p>`;
+    }
+
+    const rows = scores.map((s, i) => {
+      const isYou = s.username === username;
+      const cls = isYou ? ' class="lb-row--you"' : '';
+      const youTag = isYou ? ` <span class="lb-you">${t('you')}</span>` : '';
+      const hard = s.hardMode ? ' \u{1F525}' : '';
+      return `<tr${cls}><td class="lb-rank">${i + 1}</td><td class="lb-name">${escapeHtml(s.username)}${youTag}</td><td class="lb-score">${s.score}${hard}</td></tr>`;
+    }).join('');
+
+    return `<table class="lb-table"><tbody>${rows}</tbody></table>`;
+  }
+
+  const html = `
+    <h2>${t('leaderboard')}</h2>
+    <div class="lb-tabs">
+      <button class="lb-tab lb-tab--active" data-tab="today">${t('today')}</button>
+      <button class="lb-tab" data-tab="allTime">${t('allTime')}</button>
+    </div>
+    <div id="lb-content">${renderTab('today')}</div>
+  `;
+
+  openModal(html);
+
+  const $tabs = $modalContent.querySelectorAll('.lb-tab');
+  $tabs.forEach($tab => {
+    $tab.addEventListener('click', () => {
+      $tabs.forEach(tb => tb.classList.remove('lb-tab--active'));
+      $tab.classList.add('lb-tab--active');
+      document.getElementById('lb-content').innerHTML = renderTab($tab.dataset.tab);
+    });
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function showHelp() {
   openModal(`
     <h2>${t('helpTitle')}</h2>
@@ -978,6 +1036,13 @@ function showWelcomeScreen() {
     day: 'numeric',
   });
 
+  // Username input
+  const $usernameInput = document.getElementById('username-input');
+  $usernameInput.value = loadUsername();
+  $usernameInput.addEventListener('input', () => {
+    saveUsername($usernameInput.value);
+  });
+
   // Hard mode toggle
   $toggleHard.checked = loadHardModePref();
   $toggleHard.addEventListener('change', () => {
@@ -1029,6 +1094,11 @@ function applyI18n() {
     const key = el.dataset.i18n;
     const val = t(key);
     if (val !== key) el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    const val = t(key);
+    if (val !== key) el.placeholder = val;
   });
   document.title = t('appName');
 }
