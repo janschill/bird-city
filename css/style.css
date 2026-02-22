@@ -24,16 +24,17 @@
   --terrain-river: #a0cce8;
 
   /* Grid */
-  /* Height: 12 = 10 grid rows + 2 preview rows */
+  /* Height: 12 = 10 grid rows + 2 preview rows.
+     Offset covers header, seq-bar, tile-panel, gaps, grid gaps, etc. */
   --grid-gap: 3px;
   --border-color: #d3d6da;
   --radius: 6px;
-  --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 256px) / 12));
+  --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 290px) / 12));
 }
 
 @supports (height: 1dvh) {
   :root {
-    --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 226px) / 12));
+    --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 260px) / 12));
   }
 }
 
@@ -924,12 +925,12 @@ html, body {
 @media (min-width: 600px) and (min-height: 500px) {
   :root {
     /* Cap cell size so the grid doesn't get absurdly large on big screens */
-    --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 256px) / 12), 48px);
+    --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 290px) / 12), 48px);
   }
 
   @supports (height: 1dvh) {
     :root {
-      --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 226px) / 12), 48px);
+      --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 260px) / 12), 48px);
     }
   }
 
