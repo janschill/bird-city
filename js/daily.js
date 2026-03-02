@@ -38,6 +38,13 @@ export function getDayNumber() {
 }
 
 /**
+ * Week number since epoch (for weekly special rotation and popup tracking).
+ */
+export function getWeekNumber() {
+  return Math.floor(getDayNumber() / 7);
+}
+
+/**
  * Seeded PRNG (mulberry32).
  */
 export function createRNG(seed) {
@@ -68,7 +75,8 @@ export function generateTileSequence(puzzleNumber) {
   let buildable = 0;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      if (tempGrid[r][c].terrain !== TERRAIN.RIVER) buildable++;
+      const t = tempGrid[r][c].terrain;
+      if (t !== TERRAIN.RIVER && t !== TERRAIN.CHURCH) buildable++;
     }
   }
 

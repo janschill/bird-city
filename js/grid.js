@@ -1,9 +1,9 @@
 /**
  * Grid model for Bird City.
- * 7 cols x 10 rows. Terrain: empty, rock, tree, river.
+ * 7 cols x 10 rows. Terrain: empty, rock, tree, river, church.
  *
  * Placement rule: tiles must touch the river or an existing building.
- * River cells are non-buildable.
+ * River and church cells are non-buildable.
  */
 
 export const COLS = 7;
@@ -14,6 +14,7 @@ export const TERRAIN = {
   ROCK: 'rock',
   TREE: 'tree',
   RIVER: 'river',
+  CHURCH: 'church',
 };
 
 /**
@@ -37,6 +38,9 @@ export function createGrid(rng) {
   // Place trees (5-7), avoiding river and rocks
   const numTrees = 5 + Math.floor(rng() * 3);
   placeFeatures(grid, TERRAIN.TREE, numTrees, rng);
+
+  // Place cross-shaped church (5 cells)
+  placeChurch(grid, rng);
 
   return grid;
 }
@@ -64,6 +68,21 @@ function placeFeatures(grid, terrain, count, rng) {
   }
 }
 
+const CROSS_OFFSETS = [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]];
+
+function placeChurch(grid, rng) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const r = 1 + Math.floor(rng() * (ROWS - 2));
+    const c = 1 + Math.floor(rng() * (COLS - 2));
+    if (CROSS_OFFSETS.every(([dr, dc]) => grid[r + dr][c + dc].terrain === TERRAIN.EMPTY)) {
+      for (const [dr, dc] of CROSS_OFFSETS) {
+        grid[r + dr][c + dc].terrain = TERRAIN.CHURCH;
+      }
+      return;
+    }
+  }
+}
+
 /**
  * Check if a tile can be placed at anchor [ar, ac].
  *
@@ -85,6 +104,7 @@ export function canPlace(grid, shape, ar, ac) {
     if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
     if (grid[r][c].building !== null) return false;
     if (grid[r][c].terrain === TERRAIN.RIVER) return false;
+    if (grid[r][c].terrain === TERRAIN.CHURCH) return false;
 
     for (const [nr, nc] of neighbors(r, c)) {
       if (grid[nr][nc].building !== null) touchesBuilding = true;

@@ -71,7 +71,15 @@ const translations = {
     helpHardMode: 'Toggle on the start screen. No undo, no skip &mdash; every tile must be placed. Share results show \u{1F525} to prove it.',
     helpColorsTitle: 'Colors',
     helpScoringTitle: 'Scoring',
-    helpScoring: 'Your <strong>largest connected group</strong> of each color scores points equal to its size. Groups connect horizontally and vertically (not diagonally).<br>\u{1F332} Trees left uncovered: +2 each<br>\u{1FAA8} Rocks left uncovered: -2 each<br>Open fields (uncovered): -1 each<br>Skipped tiles: -2 each',
+    helpScoring: 'Your <strong>largest connected group</strong> of each color scores points equal to its size. Groups connect horizontally and vertically (not diagonally).<br>\u{1F332} Trees left uncovered: +2 each<br>\u{1FAA8} Rocks left uncovered: -2 each<br>Open fields (uncovered): -1 each<br>Skipped tiles: -2 each<br>\u26EA Church: +2 per unique color adjacent',
+
+    // Weekly special
+    weeklySpecialTitle: "This Week's Special",
+    weeklyChurchDesc: 'The <strong>Church \u26EA</strong> appears on the board. Place buildings of different colors next to it for bonus points: <strong>+2 per unique color</strong> adjacent (up/down/left/right). Max +6 if all 3 colors touch it!',
+    weeklySpecialDismiss: 'Got it!',
+
+    // Score breakdown
+    churchBonus: '\u26EA Church bonus (%d colors)',
 
     // End round
     endRoundTitle: 'End Round?',
@@ -166,7 +174,15 @@ const translations = {
     helpHardMode: 'Auf dem Startbildschirm umschalten. Kein Zur\u00fccknehmen, kein Passen &mdash; jedes Teil muss platziert werden. Geteilte Ergebnisse zeigen \u{1F525} als Beweis.',
     helpColorsTitle: 'Farben',
     helpScoringTitle: 'Wertung',
-    helpScoring: 'Deine <strong>gr\u00f6\u00dfte zusammenh\u00e4ngende Gruppe</strong> jeder Farbe ergibt Punkte gleich ihrer Gr\u00f6\u00dfe. Gruppen verbinden sich horizontal und vertikal (nicht diagonal).<br>\u{1F332} Nicht bedeckte B\u00e4ume: +2 je<br>\u{1FAA8} Nicht bedeckte Felsen: -2 je<br>Offene Felder (unbedeckt): -1 je<br>\u00dcbersprungene Teile: -2 je',
+    helpScoring: 'Deine <strong>gr\u00f6\u00dfte zusammenh\u00e4ngende Gruppe</strong> jeder Farbe ergibt Punkte gleich ihrer Gr\u00f6\u00dfe. Gruppen verbinden sich horizontal und vertikal (nicht diagonal).<br>\u{1F332} Nicht bedeckte B\u00e4ume: +2 je<br>\u{1FAA8} Nicht bedeckte Felsen: -2 je<br>Offene Felder (unbedeckt): -1 je<br>\u00dcbersprungene Teile: -2 je<br>\u26EA Kirche: +2 je angrenzende Farbe',
+
+    // Weekly special
+    weeklySpecialTitle: 'Spezial der Woche',
+    weeklyChurchDesc: 'Die <strong>Kirche \u26EA</strong> erscheint auf dem Spielfeld. Platziere Geb\u00e4ude verschiedener Farben daneben f\u00fcr Bonuspunkte: <strong>+2 pro angrenzende Farbe</strong> (oben/unten/links/rechts). Max +6 wenn alle 3 Farben angrenzen!',
+    weeklySpecialDismiss: 'Verstanden!',
+
+    // Score breakdown
+    churchBonus: '\u26EA Kirchenbonus (%d Farben)',
 
     // End round
     endRoundTitle: 'Runde beenden?',

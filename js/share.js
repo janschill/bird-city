@@ -43,6 +43,9 @@ export function generateShareText(grid, score, puzzleNumber, boardVariant, skipp
   if (d.skippedTiles > 0) {
     breakdown += `\u{1F6AB}-${d.skippedTiles * 2} `;
   }
+  if (d.churchBonus > 0) {
+    breakdown += `\u26EA+${d.churchBonus} `;
+  }
   if (endedEarlyCount > 0) {
     breakdown += `\u{1F3C1}${endedEarlyCount}`;
   }

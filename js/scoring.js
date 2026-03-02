@@ -6,6 +6,7 @@
  * - Uncovered empty fields: -1 each
  * - Largest connected group per color: +size each
  * - Skipped tiles: -2 each
+ * - Church adjacency: +2 per unique building color adjacent to church
  */
 
 import { ROWS, COLS, TERRAIN, neighbors } from './grid.js';
@@ -35,6 +36,22 @@ export function calculateScore(grid, skippedCount) {
     details.groups[color] = findLargestGroup(grid, color);
   }
 
+  // Church adjacency bonus: +2 per unique building color adjacent to church
+  const adjacentColors = new Set();
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c].terrain === TERRAIN.CHURCH) {
+        for (const [nr, nc] of neighbors(r, c)) {
+          if (grid[nr][nc].terrain !== TERRAIN.CHURCH && grid[nr][nc].building !== null) {
+            adjacentColors.add(grid[nr][nc].building);
+          }
+        }
+      }
+    }
+  }
+  details.churchColors = adjacentColors.size;
+  details.churchBonus = adjacentColors.size * 2;
+
   const groupTotal = COLORS.reduce((sum, c) => sum + details.groups[c], 0);
 
   const total =
@@ -42,7 +59,8 @@ export function calculateScore(grid, skippedCount) {
     details.treesUncovered * 2 -
     details.rocksUncovered * 2 -
     details.emptyUncovered -
-    details.skippedTiles * 2;
+    details.skippedTiles * 2 +
+    details.churchBonus;
 
   return { total, details };
 }

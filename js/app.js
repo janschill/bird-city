@@ -5,7 +5,7 @@
 import { COLS, ROWS, createGrid, canPlace, placeTile } from './grid.js';
 import { COLORS, rotateShape, shapeBounds, getShape } from './tiles.js';
 import { calculateScore, getStars } from './scoring.js';
-import { getPuzzleNumber, getDayNumber, getBoardVariant, generateTileSequence, createGridRNG } from './daily.js';
+import { getPuzzleNumber, getDayNumber, getWeekNumber, getBoardVariant, generateTileSequence, createGridRNG } from './daily.js';
 import { generateShareText, copyToClipboard } from './share.js';
 import { loadStats, recordGame, saveGameState, loadGameState, clearGameState, hasCompletedToday, saveCompletedGame, loadCompletedGame } from './stats.js';
 import { initI18n, t, getLang, setLang, getAvailableLanguages } from './i18n.js';
@@ -16,6 +16,7 @@ const TERRAIN_EMOJI = {
   rock: '\u{1FAA8}',
   tree: '\u{1F332}',
   river: '',
+  church: '\u26EA',
 };
 
 // Color display names (localized via i18n)
@@ -122,6 +123,7 @@ function startNewGame() {
   renderTilePreview();
   renderSequence();
   updateHUD();
+  showWeeklySpecialPopup();
 }
 
 function restoreGame(saved) {
@@ -843,6 +845,7 @@ function showGameOver(result) {
       ${d.rocksUncovered ? `<div class="score-row"><span class="label">${t('uncoveredRocks').replace('%d', d.rocksUncovered)}</span><span class="value negative">-${d.rocksUncovered * 2}</span></div>` : ''}
       ${d.emptyUncovered ? `<div class="score-row"><span class="label">${t('openFields').replace('%d', d.emptyUncovered)}</span><span class="value negative">-${d.emptyUncovered}</span></div>` : ''}
       ${d.skippedTiles ? `<div class="score-row"><span class="label">${t('skippedTiles').replace('%d', d.skippedTiles)}</span><span class="value negative">-${d.skippedTiles * 2}</span></div>` : ''}
+      ${d.churchBonus ? `<div class="score-row"><span class="label">${t('churchBonus').replace('%d', d.churchColors)}</span><span class="value positive">+${d.churchBonus}</span></div>` : ''}
       ${endedEarlyCount ? `<div class="score-row"><span class="label">${t('endedEarly').replace('%d', endedEarlyCount)}</span><span class="value" style="color:var(--text-muted);">&mdash;</span></div>` : ''}
       <div class="score-row"><span class="label">${t('total')}</span><span class="value">${result.total}</span></div>
     </div>
@@ -955,6 +958,29 @@ function showToast(message) {
   $toast.textContent = message;
   document.body.appendChild($toast);
   setTimeout(() => $toast.remove(), 2000);
+}
+
+// ===== Weekly Special Popup =====
+const WEEKLY_SPECIAL_KEY = 'birdcity_weekly_special_seen';
+
+function showWeeklySpecialPopup() {
+  const weekNum = getWeekNumber();
+  try {
+    const stored = localStorage.getItem(WEEKLY_SPECIAL_KEY);
+    if (stored === String(weekNum)) return;
+  } catch { /* ignore */ }
+
+  const html = `
+    <div class="game-over-title">${t('weeklySpecialTitle')}</div>
+    <p style="text-align:center; margin: 16px 0; font-size: 15px;">${t('weeklyChurchDesc')}</p>
+    <button class="btn-share" id="btn-weekly-dismiss">${t('weeklySpecialDismiss')}</button>
+  `;
+  openModal(html);
+
+  document.getElementById('btn-weekly-dismiss').addEventListener('click', () => {
+    try { localStorage.setItem(WEEKLY_SPECIAL_KEY, String(weekNum)); } catch { /* ignore */ }
+    closeModal();
+  });
 }
 
 // ===== Welcome Screen =====
