@@ -201,11 +201,30 @@ function setPending(r, c) {
 }
 
 /**
- * Compute anchor row,col so the shape is centered on the given cell.
+ * Clamp anchor so the entire shape stays within grid bounds.
+ */
+function clampAnchor(ar, ac) {
+  let minR = 0, maxR = 0, minC = 0, maxC = 0;
+  for (const [dr, dc] of currentShape) {
+    if (dr < minR) minR = dr;
+    if (dr > maxR) maxR = dr;
+    if (dc < minC) minC = dc;
+    if (dc > maxC) maxC = dc;
+  }
+  const clampedR = Math.max(-minR, Math.min(ROWS - 1 - maxR, ar));
+  const clampedC = Math.max(-minC, Math.min(COLS - 1 - maxC, ac));
+  return [clampedR, clampedC];
+}
+
+/**
+ * Compute anchor row,col so the shape is centered on the given cell,
+ * then clamp to keep the tile fully within the grid.
  */
 function centeredAnchor(r, c) {
   const bounds = shapeBounds(currentShape);
-  return [r - Math.floor(bounds.rows / 2), c - Math.floor(bounds.cols / 2)];
+  const ar = r - Math.floor(bounds.rows / 2);
+  const ac = c - Math.floor(bounds.cols / 2);
+  return clampAnchor(ar, ac);
 }
 
 // ===== Rendering =====
@@ -618,7 +637,8 @@ function onRotate() {
   currentShape = rotateShape(currentShape);
   renderTilePreview();
   if (pendingAnchor) {
-    setPending(pendingAnchor[0], pendingAnchor[1]);
+    const [cr, cc] = clampAnchor(pendingAnchor[0], pendingAnchor[1]);
+    setPending(cr, cc);
   }
   updateGridPreview();
 }
