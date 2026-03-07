@@ -94,6 +94,15 @@ function bfs(grid, visited, startR, startC, color) {
         visited[nr][nc] = true;
         queue.push([nr, nc]);
       }
+      // Bridge rule: connect across river and church tiles
+      if (grid[nr][nc].terrain === TERRAIN.RIVER || grid[nr][nc].terrain === TERRAIN.CHURCH) {
+        for (const [nnr, nnc] of neighbors(nr, nc)) {
+          if (!visited[nnr][nnc] && grid[nnr][nnc].building === color) {
+            visited[nnr][nnc] = true;
+            queue.push([nnr, nnc]);
+          }
+        }
+      }
     }
   }
 

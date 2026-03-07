@@ -181,8 +181,11 @@ export function canPlace(grid, shape, ar, ac) {
 
     for (const [nr, nc] of neighbors(r, c)) {
       if (grid[nr][nc].building !== null) touchesBuilding = true;
-      if (churchConnected && grid[nr][nc].terrain === TERRAIN.CHURCH) {
-        touchesBuilding = true;
+      if (grid[nr][nc].terrain === TERRAIN.CHURCH) {
+        // Bridge rule for church: check across for buildings
+        for (const [nnr, nnc] of neighbors(nr, nc)) {
+          if (grid[nnr][nnc].building !== null) touchesBuilding = true;
+        }
       }
       if (grid[nr][nc].terrain === TERRAIN.RIVER) {
         touchesRiver = true;
