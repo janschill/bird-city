@@ -1,13 +1,13 @@
 /**
  * Grid model for Bird City.
- * 7 cols x 10 rows. Terrain: empty, rock, tree, river, church.
+ * 8 cols x 11 rows. Terrain: empty, rock, tree, river, church.
  *
  * Placement rule: tiles must touch the river or an existing building.
  * River and church cells are non-buildable.
  */
 
-export const COLS = 7;
-export const ROWS = 10;
+export const COLS = 8;
+export const ROWS = 11;
 
 export const TERRAIN = {
   EMPTY: 'empty',
@@ -31,26 +31,52 @@ export function createGrid(rng) {
   // Place river (meanders top to bottom, 1 cell wide)
   placeRiver(grid, rng);
 
-  // Place rocks (5-7), avoiding river
-  const numRocks = 5 + Math.floor(rng() * 3);
+  // Place rocks (6-9), avoiding river
+  const numRocks = 6 + Math.floor(rng() * 4);
   placeFeatures(grid, TERRAIN.ROCK, numRocks, rng);
 
-  // Place trees (5-7), avoiding river and rocks
-  const numTrees = 5 + Math.floor(rng() * 3);
+  // Place trees (6-9), avoiding river and rocks
+  const numTrees = 6 + Math.floor(rng() * 4);
   placeFeatures(grid, TERRAIN.TREE, numTrees, rng);
 
-  // Place church (5 cells, shape varies per puzzle)
+  // Place church (3-4 cells, shape varies per puzzle)
   placeChurch(grid, rng);
 
   return grid;
 }
 
 function placeRiver(grid, rng) {
-  let col = 2 + Math.floor(rng() * 3); // start col 2-4
-  for (let row = 0; row < ROWS; row++) {
-    grid[row][col].terrain = TERRAIN.RIVER;
-    const drift = Math.floor(rng() * 3) - 1; // -1, 0, +1
-    col = Math.max(1, Math.min(COLS - 2, col + drift));
+  // 40% chance of a diagonal river that exits from a side
+  const diagonal = rng() < 0.4;
+
+  if (diagonal) {
+    // Diagonal river: starts at the top, drifts toward one side, exits left or right
+    const exitLeft = rng() < 0.5;
+    let col = exitLeft
+      ? 3 + Math.floor(rng() * (COLS - 4)) // start right-ish
+      : Math.floor(rng() * (COLS - 3));     // start left-ish
+    const bias = exitLeft ? -1 : 1; // drift direction
+
+    for (let row = 0; row < ROWS; row++) {
+      grid[row][col].terrain = TERRAIN.RIVER;
+      // Biased drift: 60% toward exit side, 20% straight, 20% away
+      const roll = rng();
+      const drift = roll < 0.6 ? bias : roll < 0.8 ? 0 : -bias;
+      col = Math.max(0, Math.min(COLS - 1, col + drift));
+      // If we've reached the edge, stop early (river exits the side)
+      if (col === 0 || col === COLS - 1) {
+        grid[row + 1 < ROWS ? row + 1 : row][col].terrain = TERRAIN.RIVER;
+        break;
+      }
+    }
+  } else {
+    // Classic top-to-bottom river
+    let col = 2 + Math.floor(rng() * (COLS - 3)); // start col 2 to COLS-2
+    for (let row = 0; row < ROWS; row++) {
+      grid[row][col].terrain = TERRAIN.RIVER;
+      const drift = Math.floor(rng() * 3) - 1; // -1, 0, +1
+      col = Math.max(1, Math.min(COLS - 2, col + drift));
+    }
   }
 }
 
@@ -68,16 +94,20 @@ function placeFeatures(grid, terrain, count, rng) {
   }
 }
 
-// 4 church shape variants (each 5 cells), randomly selected per puzzle.
+// 6 church shape variants (3-4 cells), randomly selected per puzzle.
 const CHURCH_SHAPES = [
-  // Cross / plus sign
-  [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]],
-  // T-shape (pointing up)
-  [[0, 0], [0, -1], [0, 1], [-1, 0], [-2, 0]],
-  // L-shape (large)
-  [[0, 0], [1, 0], [2, 0], [0, 1], [0, 2]],
-  // Z-shape / staircase
-  [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2]],
+  // Straight 3
+  [[0, 0], [1, 0], [2, 0]],
+  // Straight 3 horizontal
+  [[0, 0], [0, 1], [0, 2]],
+  // L-shape (3 cells)
+  [[0, 0], [1, 0], [1, 1]],
+  // T-shape (4 cells)
+  [[0, 0], [-1, 0], [1, 0], [0, 1]],
+  // Small L (4 cells)
+  [[0, 0], [1, 0], [2, 0], [2, 1]],
+  // Square (4 cells)
+  [[0, 0], [0, 1], [1, 0], [1, 1]],
 ];
 
 function placeChurch(grid, rng) {
