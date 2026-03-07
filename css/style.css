@@ -22,7 +22,7 @@
   --terrain-rock: #cdc4b0;
   --terrain-tree: #b8d8b0;
   --terrain-river: #a0cce8;
-  --terrain-church: #e8d8a8;
+  --terrain-church: #d8c8e8;
 
   /* Grid */
   /* Height: 13 = 11 grid rows + 2 preview rows.
@@ -272,7 +272,7 @@ html, body {
 .cell--empty { background: var(--terrain-empty); border-color: var(--border-color); }
 .cell--rock  { background: var(--terrain-rock);  border-color: #bab0a0; }
 .cell--tree  { background: var(--terrain-tree);  border-color: #98c098; }
-.cell--church { background: var(--terrain-church); border-color: #d0c090; }
+.cell--church { background: var(--terrain-church); border-color: #b8a8d0; }
 
 .cell--river {
   background: transparent;
