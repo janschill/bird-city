@@ -22,20 +22,20 @@
   --terrain-rock: #cdc4b0;
   --terrain-tree: #b8d8b0;
   --terrain-river: #a0cce8;
-  --terrain-church: #e8d8a8;
+  --terrain-church: #d8c8e8;
 
   /* Grid */
-  /* Height: 12 = 10 grid rows + 2 preview rows.
+  /* Height: 13 = 11 grid rows + 2 preview rows.
      Offset covers header, seq-bar, tile-panel, gaps, grid gaps, etc. */
   --grid-gap: 3px;
   --border-color: #d3d6da;
   --radius: 6px;
-  --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 290px) / 12));
+  --cell-size: min(calc((100vw - 44px) / 8), calc((100vh - 290px) / 13));
 }
 
 @supports (height: 1dvh) {
   :root {
-    --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 260px) / 12));
+    --cell-size: min(calc((100vw - 44px) / 8), calc((100dvh - 260px) / 13));
   }
 }
 
@@ -237,8 +237,8 @@ html, body {
 
 #grid {
   display: grid;
-  grid-template-columns: repeat(7, var(--cell-size));
-  grid-template-rows: repeat(10, var(--cell-size));
+  grid-template-columns: repeat(8, var(--cell-size));
+  grid-template-rows: repeat(11, var(--cell-size));
   gap: var(--grid-gap);
 }
 
@@ -272,7 +272,7 @@ html, body {
 .cell--empty { background: var(--terrain-empty); border-color: var(--border-color); }
 .cell--rock  { background: var(--terrain-rock);  border-color: #bab0a0; }
 .cell--tree  { background: var(--terrain-tree);  border-color: #98c098; }
-.cell--church { background: var(--terrain-church); border-color: #d0c090; }
+.cell--church { background: var(--terrain-church); border-color: #b8a8d0; }
 
 .cell--river {
   background: transparent;
@@ -928,12 +928,12 @@ html, body {
 @media (min-width: 600px) and (min-height: 500px) {
   :root {
     /* Cap cell size so the grid doesn't get absurdly large on big screens */
-    --cell-size: min(calc((100vw - 44px) / 7), calc((100vh - 290px) / 12), 48px);
+    --cell-size: min(calc((100vw - 44px) / 8), calc((100vh - 290px) / 13), 44px);
   }
 
   @supports (height: 1dvh) {
     :root {
-      --cell-size: min(calc((100vw - 44px) / 7), calc((100dvh - 260px) / 12), 48px);
+      --cell-size: min(calc((100vw - 44px) / 8), calc((100dvh - 260px) / 13), 44px);
     }
   }
 

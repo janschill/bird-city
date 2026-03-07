@@ -87,7 +87,7 @@ export function generateTileSequence(puzzleNumber) {
   const tiles = [];
   let totalCells = 0;
 
-  while (totalCells < targetCells && tiles.length < 25) {
+  while (totalCells < targetCells && tiles.length < 30) {
     const shapeKey = SHAPE_KEYS[Math.floor(rng() * SHAPE_KEYS.length)];
     const color = COLORS[Math.floor(rng() * COLORS.length)];
     const shape = getShape(shapeKey);
