@@ -39,7 +39,7 @@ export function createGrid(rng) {
   const numTrees = 5 + Math.floor(rng() * 3);
   placeFeatures(grid, TERRAIN.TREE, numTrees, rng);
 
-  // Place cross-shaped church (5 cells)
+  // Place church (5 cells, shape varies per puzzle)
   placeChurch(grid, rng);
 
   return grid;
@@ -68,19 +68,59 @@ function placeFeatures(grid, terrain, count, rng) {
   }
 }
 
-const CROSS_OFFSETS = [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]];
+// 4 church shape variants (each 5 cells), randomly selected per puzzle.
+const CHURCH_SHAPES = [
+  // Cross / plus sign
+  [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]],
+  // T-shape (pointing up)
+  [[0, 0], [0, -1], [0, 1], [-1, 0], [-2, 0]],
+  // L-shape (large)
+  [[0, 0], [1, 0], [2, 0], [0, 1], [0, 2]],
+  // Z-shape / staircase
+  [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2]],
+];
 
 function placeChurch(grid, rng) {
+  const shape = CHURCH_SHAPES[Math.floor(rng() * CHURCH_SHAPES.length)];
+
+  // Compute the margin needed so all offsets stay in bounds
+  const minDR = Math.min(...shape.map(([dr]) => dr));
+  const maxDR = Math.max(...shape.map(([dr]) => dr));
+  const minDC = Math.min(...shape.map(([, dc]) => dc));
+  const maxDC = Math.max(...shape.map(([, dc]) => dc));
+
+  const rMin = -minDR;
+  const rMax = ROWS - 1 - maxDR;
+  const cMin = -minDC;
+  const cMax = COLS - 1 - maxDC;
+
   for (let attempt = 0; attempt < 100; attempt++) {
-    const r = 1 + Math.floor(rng() * (ROWS - 2));
-    const c = 1 + Math.floor(rng() * (COLS - 2));
-    if (CROSS_OFFSETS.every(([dr, dc]) => grid[r + dr][c + dc].terrain === TERRAIN.EMPTY)) {
-      for (const [dr, dc] of CROSS_OFFSETS) {
+    const r = rMin + Math.floor(rng() * (rMax - rMin + 1));
+    const c = cMin + Math.floor(rng() * (cMax - cMin + 1));
+    if (shape.every(([dr, dc]) => grid[r + dr][c + dc].terrain === TERRAIN.EMPTY)) {
+      for (const [dr, dc] of shape) {
         grid[r + dr][c + dc].terrain = TERRAIN.CHURCH;
       }
       return;
     }
   }
+}
+
+/**
+ * Check whether the church is "connected" -- i.e. at least one
+ * building is orthogonally adjacent to any church cell.
+ */
+function churchIsConnected(grid) {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c].terrain === TERRAIN.CHURCH) {
+        for (const [nr, nc] of neighbors(r, c)) {
+          if (grid[nr][nc].building !== null) return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -92,9 +132,12 @@ function placeChurch(grid, rng) {
  * - No cell can be on a river
  * - First tile: must be adjacent to the river
  * - Subsequent tiles: must be adjacent to an existing building
+ * - Once any building touches the church, the church counts as a
+ *   building for adjacency (you can build off any side of it).
  */
 export function canPlace(grid, shape, ar, ac) {
   const hasBuildings = gridHasBuildings(grid);
+  const churchConnected = churchIsConnected(grid);
   let touchesRiver = false;
   let touchesBuilding = false;
 
@@ -108,6 +151,9 @@ export function canPlace(grid, shape, ar, ac) {
 
     for (const [nr, nc] of neighbors(r, c)) {
       if (grid[nr][nc].building !== null) touchesBuilding = true;
+      if (churchConnected && grid[nr][nc].terrain === TERRAIN.CHURCH) {
+        touchesBuilding = true;
+      }
       if (grid[nr][nc].terrain === TERRAIN.RIVER) {
         touchesRiver = true;
         // Check across the river for buildings (bridge rule)
